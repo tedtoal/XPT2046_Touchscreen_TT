@@ -1,0 +1,11 @@
+XPT2046_Touchscreen_TT	KEYWORD1
+TS_Point	KEYWORD1
+begin	KEYWORD2
+getPoint	KEYWORD2
+touched	KEYWORD2
+tirqTouched	KEYWORD2
+readData	KEYWORD2
+bufferEmpty	KEYWORD2
+bufferSize	KEYWORD2
+setRotation	KEYWORD2
+setThresholds	KEYWORD2
