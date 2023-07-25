@@ -1,8 +1,27 @@
-# XPT2046 Touchscreen Arduino Library
+# XPT2046_Touchscreen_TT
 
-XPT2046_Touchscreen is a library for the XPT2046 resistive touchscreen controllers used on many low cost TFT displays.
+## Copy of PaulStoffregen/XPT_2046_Touchscreen with function for setting thresholds
 
-![ILI9431Test Example Program](doc/ILI9431Test.jpg)
+*XPT2046_Touchscreen_TT* is an Arduino C++ library that supports the XPT2046 resistive touchscreen controllers used on many low cost TFT displays. It is a copy of the library made by Paul Stoffregen named *XPT_2046_Touchscreen*. The changes to it are:
+
+**1.** The defines of Z_THRESHOLD and Z_THRESHOLD_INT were moved from *XPT2046_Touchscreen_TT.cpp* to *XPT2046_Touchscreen_TT.h*.
+
+**2.** New function *XPT2046_Touchscreen::setThresholds()* allows dynamically setting the pressure thresholds previously hard-coded as Z_THRESHOLD and Z_THRESHOLD_INT.
+
+**3.** Function header comments in Doxygen style have been added to the XPT2046_Touchscreen_TT.h file.
+
+**4.** Example programs have been changed:
+
+> Use Adafruit-GFX-Library and Adafruit_ILI9341 libraries in place of *ILI9341_t3* library.
+>
+> Use Adafruit-GFX-library FreeSans12pt7b font in place of Arial fonts from *ILI9341_t3* library.
+> Set serial monitor speed to 115,200 bps instead of 38,400 bps.
+>
+> Change pin assignments to match my own system and add usage comment reminding user to set the constants for his system.
+>
+> Use longer names for _PIN #defines.
+>
+> Allocate tft and touchscreen objects with *new*.
 
 ## Setup Functions
 
