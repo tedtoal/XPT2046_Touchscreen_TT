@@ -28,8 +28,6 @@
 >
 > Allocate tft and touchscreen objects with *new*.
 >
-> Removed *constexpr* from constructor, it caused problems.
->
 > Adjust Serial initialization to start up better.
 > 
 > Call the new set and get threshold functions.
