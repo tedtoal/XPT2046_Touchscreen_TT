@@ -34,6 +34,9 @@
         be changed programmatically.
 
     3. Added doxygen-style function documentation to the .h file.
+
+    4. Changed example programs to use Adafruit-GFX-Library and Adafruit_ILI9341
+        libraries.
 */
 #ifndef XPT2046_Touchscreen_TT_h
 #define XPT2046_Touchscreen_TT_h
