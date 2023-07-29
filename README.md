@@ -1,6 +1,6 @@
 # XPT2046_Touchscreen_TT
 
-## Changes PaulStoffregen/XPT_2046_Touchscreen with functions for setting and getting thresholds
+## Changes to Paul Stoffregen's XPT_2046_Touchscreen with function for setting thresholds
 
 *XPT2046_Touchscreen_TT* is an Arduino C++ library that supports the XPT2046 resistive touchscreen controllers used on many low cost TFT displays. It is a copy of the library made by Paul Stoffregen named *XPT_2046_Touchscreen*, with these changes:
 
@@ -233,13 +233,15 @@ void loop() {
 }
 ```
 
+## Calibrating the touchscreen
+
+The mapping class *TS_ILI9341_map* introduced in the previous section also includes functions for calibrating the relationship between touchscreen coordinates and TFT display coordinates. Although the default calibration is okay, it isn't as ideal as it could be. Touchscreens seem to vary a bit from one to another, and the different rotations also behave differently.
+
+An example program is provided that illustrates calibration of the touchscreen. It also shows how to save the calibration values in EEPROM so it can be retrieved after a power-down of the system, upon powering back up. It is described in a following section.
+
 ## Example programs
 
-Three example programs are provided in the library's *examples* subfolder.
-
-### ILI9341Test.ino
-
-Example program *ILI9341Test.ino* assumes a touchscreen with XPT2346 controller connected to a TFT LCD display with an ILI9341 controller. It initializes the TFT and the touchscreen software and controllers, then waits for touches, displays their coordinates on the screen and in the IDE serial monitor window, and draws a green "+" on the screen at the display coordinates that map to the touched position.
+Four example programs are provided in the library's *examples* subfolder. All four programs require that you set #define values near the start of the file to define the pin numbers connected to the touchscreen and in some cases to a TFT LCD display.
 
 ### TouchTest.ino
 
@@ -248,6 +250,16 @@ Example program *TouchTest.ino* assumes only a touchscreen with XPT2346 controll
 ### TouchTestIRQ.ino
 
 Example program *TouchTestIRQ.ino* is just like *TouchTest.ino* except it uses interrupts whereas the latter does not.
+
+### ILI9341Test.ino
+
+Example program *ILI9341Test.ino* assumes a touchscreen with XPT2346 controller connected to a TFT LCD display with an ILI9341 controller. It initializes the TFT and the touchscreen software and controllers, then waits for touches, displays their coordinates on the screen and in the IDE serial monitor window, and draws a green "+" at the display position to which the touched position maps (using the mapping class *TS_ILI9341_map*).
+
+### ILI9341Calibrate.ino
+
+Example program *ILI9341Calibrate.ino* illustrates how to provide a user with a screen that lets him calibrate the relationship between the touchscreen coordinates and the TFT display coordinates. It also assumes a touchscreen with XPT2346 controller connected to a TFT LCD display with an ILI9341 controller. If you are using SAMD architecture, it uses the FlashStorage_SAMD library to store calibration data. It initializes the TFT and the touchscreen software and controllers, then waits for two touches, displays their coordinates on the screen and in the IDE serial monitor window, computes new calibration parameters and displays them on the serial monitor. If the SAMD architecture is being used, it writes them to EEPROM non-volatile memory, and reads them back and uses them if the program is restarted.
+
+You can model your own calibration screen after the one shown in this example program. If you do not have the SAMD architecture, this is a problem, because you don't want to force the user to calibrate the screen at every startup. Instead, you want to store the calibration parameters in non-volatile memory and retrieve them at startup. A calibration screen would only be displayed when the user invoked it. There are other non-volatile memory libraries available, and you will want to choose one and make the necessary changes to the example program to use it.
 
 ## Adafruit Library Compatibility
 
