@@ -1,6 +1,8 @@
 /*
   XPT2046_Touchscreen_TT.cpp - Support touchscreens using the XPT2046 controller
-  chip. This project was cloned from PaulStoffregen's XPT2046_Touchscreen project.
+  chip. This project was cloned from Paul Stoffregen's XPT2046_Touchscreen
+  project.
+
 
   Copyright (c) 2015, Paul Stoffregen, paul@pjrc.com
 
@@ -31,9 +33,40 @@
     1. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
 
     2. Add function setThresholds() to allow Z_THRESHOLD and Z_THRESHOLD_INT to
-        be changed programmatically.
+        be changed programmatically, now stored in variables Z_Threshold and
+        Z_Threshold_Int.
 
-    3. Added doxygen-style function documentation to the .h file.
+    3. Add function Zthreshold() which returns the pressure threshold
+        Z_Threshold.
+
+    4. Add function Zthreshold_Int() which returns the pressure threshold
+        Z_Threshold_Int.
+
+    5. Added doxygen-style function documentation to the .h file.
+
+    6. Example programs have been changed:
+
+        - Use Adafruit-GFX-Library and Adafruit_ILI9341 libraries in place of
+          ILI9341_t3 library.
+
+        - Use Adafruit-GFX-library FreeSans12pt7b font in place of Arial fonts
+          from ILI9341_t3 library.
+
+        - Set serial monitor speed to 115,200 bps instead of 38,400 bps.
+
+        - Change pin assignments to match my own system and add usage comment
+          reminding user to set the constants for his system.
+
+        - Use longer names for _PIN #defines.
+
+        - Allocate tft and touchscreen objects with new.
+
+        - Adjust Serial initialization to start up better.
+
+    7. Add new code files TS_ILI9341_map.h and .cpp, and new example program
+        file ILI9341Calibrate.ino, to support mapping touchscreen coordinates
+        to/from TFT LCD display coordinates and provide support for calibrating
+        the touchscreen-to-TFT mapping.
 */
 
 #include <Arduino.h>
@@ -192,7 +225,7 @@ void XPT2046_Touchscreen::update()
 	if (z < Z_Threshold) { //	if ( !touched ) {
 		// Serial.println();
 		zraw = 0;
-		if (z < Z_Threshold_int) { //	if ( !touched ) {
+		if (z < Z_Threshold_Int) { //	if ( !touched ) {
 			if (255 != tirqPin) isrWake = false;
 		}
 		return;

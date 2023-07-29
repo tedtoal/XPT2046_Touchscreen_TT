@@ -1,3 +1,6 @@
+(This license file applies to XPT2046_Touchscreen_TT.h/.cpp, ILI9341Test.ino,
+ TouchTest.ino, and TouchTestIRQ.ino)
+
 Copyright (c) 2015, Paul Stoffregen, paul@pjrc.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
