@@ -1,6 +1,7 @@
 /*
   XPT2046_Touchscreen_TT.h - Support touchscreens using the XPT2046 controller
-  chip. This project was cloned from PaulStoffregen's XPT2046_Touchscreen project.
+  chip. This project was cloned from Paul Stoffregen's XPT2046_Touchscreen
+  project.
 
   Copyright (c) 2015, Paul Stoffregen, paul@pjrc.com
 
@@ -31,12 +32,51 @@
     1. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
 
     2. Add function setThresholds() to allow Z_THRESHOLD and Z_THRESHOLD_INT to
-        be changed programmatically.
+        be changed programmatically, now stored in variables Z_Threshold and
+        Z_Threshold_Int.
 
+<<<<<<< HEAD
     3. Added doxygen-style function documentation to the .h file.
 
     4. Changed example programs to use Adafruit-GFX-Library and Adafruit_ILI9341
         libraries.
+=======
+    3. Add function Zthreshold() which returns the pressure threshold
+        Z_Threshold.
+
+    4. Add function Zthreshold_Int() which returns the pressure threshold
+        Z_Threshold_Int.
+
+    5. Added doxygen-style function documentation to the .h file.
+
+    6. Example programs have been changed:
+
+        - Use Adafruit-GFX-Library and Adafruit_ILI9341 libraries in place of
+          ILI9341_t3 library.
+
+        - Use Adafruit-GFX-library FreeSans12pt7b font in place of Arial fonts
+          from ILI9341_t3 library.
+
+        - Set serial monitor speed to 115,200 bps instead of 38,400 bps.
+
+        - Change pin assignments to match my own system and add usage comment
+          reminding user to set the constants for his system.
+
+        - Use longer names for _PIN #defines.
+
+        - Allocate tft and touchscreen objects with new.
+
+        - Adjust Serial initialization to start up better.
+
+        - ILI9341Test.ino now uses new files TS_ILI9341.h/.cpp to display a "+"
+          on the display at the tapped point, and it doesn't repeatedly write
+          data to monitor and display, but only during a tap or untap.
+
+    7. Add new code files TS_ILI9341_map.h and .cpp, and new example program
+        file ILI9341Calibrate.ino, to support mapping touchscreen coordinates
+        to/from TFT LCD display coordinates and provide support for calibrating
+        the touchscreen-to-TFT mapping.
+>>>>>>> f4f1a31 (New calibration routines)
 */
 #ifndef XPT2046_Touchscreen_TT_h
 #define XPT2046_Touchscreen_TT_h
@@ -198,7 +238,7 @@ public:
   /**************************************************************************/
   /*!
     @brief    Set the screen rotation.
-    @param    n   0=north, 1=east, 2=south, 3=west.
+    @param    n   0=north, 1=east, 2=south, 3=west, 0/2=portrait, 1/3=landscape.
   */
   /**************************************************************************/
 	void setRotation(uint8_t n) { rotation = n % 4; }
@@ -217,8 +257,27 @@ public:
                                   Z_THRESHOLD).
   */
   /**************************************************************************/
-	void setThresholds(uint16_t Z_Threshold_press = Z_THRESHOLD, uint16_t Z_Threshold_interrupt = Z_THRESHOLD_INT) {
-	  Z_Threshold = Z_Threshold_press; Z_Threshold_Int = Z_Threshold_interrupt; }
+	void setThresholds(int16_t Z_Threshold_press = Z_THRESHOLD, int16_t Z_Threshold_interrupt = Z_THRESHOLD_INT) {
+	  Z_Threshold = Z_Threshold_press; Z_Threshold_Int = Z_Threshold_interrupt;
+	  }
+
+  /**************************************************************************/
+  /*!
+    @brief    Get z-threshold for recognizing a press.
+    @returns  z-threshold for recognizing a press that changes the values
+              returned by readData(), Z_Threshold.
+  */
+  /**************************************************************************/
+	int16_t Zthreshold() { return(Z_Threshold); }
+
+  /**************************************************************************/
+  /*!
+    @brief    Get z-threshold for clearing tirqTouched() flag.
+    @returns  z-threshold for clearing the flag returned by tirqTouched(),
+              Z_Threshold_Int.
+  */
+  /**************************************************************************/
+	int16_t Zthreshold_Int() { return(Z_Threshold_Int); }
 
 // protected:
 	volatile bool isrWake=true;
