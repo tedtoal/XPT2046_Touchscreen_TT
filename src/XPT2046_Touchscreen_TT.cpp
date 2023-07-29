@@ -23,50 +23,6 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-
-
-  Details:
-
-  This library makes the following changes to the original XPT2046_Touchscreen
-  library by Paul Stoffregen:
-
-    1. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
-
-    2. Add function setThresholds() to allow Z_THRESHOLD and Z_THRESHOLD_INT to
-        be changed programmatically, now stored in variables Z_Threshold and
-        Z_Threshold_Int.
-
-    3. Add function Zthreshold() which returns the pressure threshold
-        Z_Threshold.
-
-    4. Add function Zthreshold_Int() which returns the pressure threshold
-        Z_Threshold_Int.
-
-    5. Added doxygen-style function documentation to the .h file.
-
-    6. Example programs have been changed:
-
-        - Use Adafruit-GFX-Library and Adafruit_ILI9341 libraries in place of
-          ILI9341_t3 library.
-
-        - Use Adafruit-GFX-library FreeSans12pt7b font in place of Arial fonts
-          from ILI9341_t3 library.
-
-        - Set serial monitor speed to 115,200 bps instead of 38,400 bps.
-
-        - Change pin assignments to match my own system and add usage comment
-          reminding user to set the constants for his system.
-
-        - Use longer names for _PIN #defines.
-
-        - Allocate tft and touchscreen objects with new.
-
-        - Adjust Serial initialization to start up better.
-
-    7. Add new code files TS_ILI9341_map.h and .cpp, and new example program
-        file ILI9341Calibrate.ino, to support mapping touchscreen coordinates
-        to/from TFT LCD display coordinates and provide support for calibrating
-        the touchscreen-to-TFT mapping.
 */
 
 #include <Arduino.h>

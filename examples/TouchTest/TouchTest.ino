@@ -66,4 +66,3 @@ void loop() {
     Serial.println();
   }
 }
-
