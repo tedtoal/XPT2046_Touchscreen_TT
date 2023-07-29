@@ -29,27 +29,26 @@
   This library makes the following changes to the original XPT2046_Touchscreen
   library by Paul Stoffregen:
 
-    1. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
+    1. Add new code files TS_ILI9341_map.h and .cpp, and new example program
+        file ILI9341Calibrate.ino, to support mapping touchscreen coordinates
+        to/from TFT LCD display coordinates and provide support for calibrating
+        the touchscreen-to-TFT mapping.
 
-    2. Add function setThresholds() to allow Z_THRESHOLD and Z_THRESHOLD_INT to
+    2. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
+
+    3. Add function setThresholds() to allow Z_THRESHOLD and Z_THRESHOLD_INT to
         be changed programmatically, now stored in variables Z_Threshold and
         Z_Threshold_Int.
 
-<<<<<<< HEAD
-    3. Added doxygen-style function documentation to the .h file.
-
-    4. Changed example programs to use Adafruit-GFX-Library and Adafruit_ILI9341
-        libraries.
-=======
-    3. Add function Zthreshold() which returns the pressure threshold
+    4. Add function Zthreshold() which returns the pressure threshold
         Z_Threshold.
 
-    4. Add function Zthreshold_Int() which returns the pressure threshold
+    5. Add function Zthreshold_Int() which returns the pressure threshold
         Z_Threshold_Int.
 
-    5. Added doxygen-style function documentation to the .h file.
+    6. Added doxygen-style function documentation to the .h file.
 
-    6. Example programs have been changed:
+    7. Example programs have been changed:
 
         - Use Adafruit-GFX-Library and Adafruit_ILI9341 libraries in place of
           ILI9341_t3 library.
@@ -71,12 +70,6 @@
         - ILI9341Test.ino now uses new files TS_ILI9341.h/.cpp to display a "+"
           on the display at the tapped point, and it doesn't repeatedly write
           data to monitor and display, but only during a tap or untap.
-
-    7. Add new code files TS_ILI9341_map.h and .cpp, and new example program
-        file ILI9341Calibrate.ino, to support mapping touchscreen coordinates
-        to/from TFT LCD display coordinates and provide support for calibrating
-        the touchscreen-to-TFT mapping.
->>>>>>> f4f1a31 (New calibration routines)
 */
 #ifndef XPT2046_Touchscreen_TT_h
 #define XPT2046_Touchscreen_TT_h

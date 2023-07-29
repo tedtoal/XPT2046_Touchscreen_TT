@@ -46,11 +46,12 @@
   done here, and use it for mapping touchscreen point coordinates to TFT display
   coordinates.
 
-  This stores the calibration values in the microprocessor EEPROM using the
-  library module FlashStorage_SAMD. If you restart the program (without
-  reloading it), it should initialize with the last calibration values rather
-  than the defaults. When you reload the program, that erases the EEPROM so it
-  has to start anew at storing calibrated values after you do a new calibration.
+  If the SAMD architecture is being used (ARDUINO_ARCH_SAMD), this stores the
+  calibration values in the microprocessor EEPROM using the library module
+  FlashStorage_SAMD. If you restart the program (without reloading it), it
+  should initialize with the last calibration values rather than the defaults.
+  When you reload the program, that erases the EEPROM so it has to start anew at
+  storing calibrated values after you do a new calibration.
 */
 #include <Arduino.h>
 #include <stdarg.h>
@@ -58,6 +59,9 @@
 #include <TS_ILI9341_map.h>
 #include <Fonts/FreeSans9pt7b.h> // From Adafruit-GFX-Library
 #include <monitor_printf.h>
+
+// EEPROM support currently only if SAMD architecture.
+#ifdef ARDUINO_ARCH_SAMD
 
 // It appears (page 29 of Atmel SAM D21E / SAM D21G / SAM D21J data sheet) that
 // the EEPROM page size is 64, and 4 pages must be erased at one time, giving an
@@ -71,6 +75,12 @@
 // Now include flash storage library header file.
 // To be included only in one file to avoid `Multiple Definitions` Linker Error.
 #include <FlashStorage_SAMD.h>
+
+// Signature used at start of a flash memory block to mark the block as
+// containing valid data written by the application.
+const int WRITTEN_SIGNATURE = 0xBEEFDEED;
+
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Constants.
@@ -104,10 +114,6 @@
 #define TEXT_TAP_RESULT "Tap to show calibration"
 #define TEXT_TAP_TEST "Tap to test calibration"
 
-// Signature used at start of a flash memory block to mark the block as
-// containing valid data written by the application.
-const int WRITTEN_SIGNATURE = 0xBEEFDEED;
-
 // Size of TFT printf buffer in characters.
 #define TFT_PRINTF_BUF_SIZE 80
 
@@ -131,7 +137,8 @@ typedef enum _eState {
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 // Structure containing non-volatile data to be stored in flash memory (with
-// copy in regular memory).
+// copy in regular memory). We use this structure even if we don't have the SAMD
+// architecture support for storing it in EEPROM.
 struct nonvolatileSettings {
   int16_t TS_LR_X;
   int16_t TS_LR_Y;
@@ -203,6 +210,9 @@ void showTS_XY(int16_t x, int16_t y, int16_t TSx, int16_t TSy) {
   tft_printf(x, y, COLOR_TEXT, "TX = %d,  TY = %d", TSx, TSy);
 }
 
+// EEPROM support currently only if SAMD architecture.
+#ifdef ARDUINO_ARCH_SAMD
+
 //**************************************************************************
 // Read non-volatile settings from flash memory into 'settings'.  If flash
 // memory has not yet been initialized, initialize it with 'defaults'.
@@ -242,6 +252,8 @@ bool writeNonvolatileSettingsIfChanged(nonvolatileSettings& settings) {
   EEPROM.commit();
   return(true);
 }
+
+#endif
 
 //**************************************************************************
 // Show nonvolatile settings on serial monitor.
@@ -291,12 +303,17 @@ void setup() {
     &defaults.TS_UL_Y);
   showNVsettings("Calibration setting defaults:", defaults);
 
+  // EEPROM support currently only if SAMD architecture.
+  #ifdef ARDUINO_ARCH_SAMD
   // Read non-volatile settings from flash-based EEPROM into 'NVsettings', then
   // set them as the current calibration settings in 'tsmap'.
   readNonvolatileSettings(NVsettings, defaults);
   tsmap->setTS_calibration(NVsettings.TS_LR_X, NVsettings.TS_LR_Y, NVsettings.TS_UL_X,
     NVsettings.TS_UL_Y);
   showNVsettings("Non-volatile EEPROM calibration settings:", NVsettings);
+  #else
+  monitor.printf("Unable to read calibration settings from EEPROM - currently this needs SAMD architecture to do that\n");
+  #endif
 
   // Get position of TFT upper-left and lower-right corner.
   x_ULcorner = 0;
@@ -385,7 +402,12 @@ void loop() {
         &NVsettings.TS_UL_Y);
       tsmap->setTS_calibration(NVsettings.TS_LR_X, NVsettings.TS_LR_Y,
         NVsettings.TS_UL_X, NVsettings.TS_UL_Y);
+      // EEPROM support currently only if SAMD architecture.
+      #ifdef ARDUINO_ARCH_SAMD
       writeNonvolatileSettingsIfChanged(NVsettings);
+      #else
+      monitor.printf("Unable to store calibration settings in EEPROM - currently this needs SAMD architecture to do that\n");
+      #endif
       showNVsettings("Calibration results:", NVsettings);
 
       // Show the display corner points calibration mapping on the display.
