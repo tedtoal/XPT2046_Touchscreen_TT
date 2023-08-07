@@ -6,7 +6,7 @@
 
 ## List of changes to Paul Stoffregen's version of the library
 
-**1.** Add new code files *TS_ILI9341.h* and *.cpp*, and new example program files *TouchEvents.ino and ILI9341Calibrate.ino*, to support **touch and release events, mapping touchscreen coordinates to/from TFT LCD display coordinates, and calibrating the touchscreen-to-TFT mapping**.
+**1.** Add new code files *TS_ILI9341.h* and *.cpp*, and new example program files *ILI9341Events.ino and ILI9341Calibrate.ino*, to support **touch and release events, mapping touchscreen coordinates to/from TFT LCD display coordinates, and calibrating the touchscreen-to-TFT mapping**.
 
 **2.** New function *setThresholds()* allows **dynamically setting the pressure thresholds** previously hard-coded as Z_THRESHOLD and Z_THRESHOLD_INT, now stored in variables Z_Threshold and Z_Threshold_Int. (The defines of Z_THRESHOLD and Z_THRESHOLD_INT were moved from *XPT2046_Touchscreen_TT.cpp* to *XPT2046_Touchscreen_TT.h*.)
 
@@ -32,11 +32,11 @@
 >
 > Adjust Serial initialization to start up better.
 
-## Using class XPT2036_Touchscreen in your project
+## Adding basic touchscreen functionality to your project
 
 ### Include files
 
-At the start of your project .ino file, where you #include other files, #include *XPT2046_Touchscreen_TT.h*:
+At the start of your project .ino file, #include *XPT2046_Touchscreen_TT.h*:
 
 ```
 #include <XPT2046_Touchscreen_TT.h>
@@ -95,6 +95,8 @@ port.
 
 ### Reading touch information
 
+A later section will describe the easiest way to interact with the touch screen when using a TFT display, with touch and release events. However, you can always interact at a lower level by reading the touch information at any time.
+
 The touched() function tells if the display is currently being touched, returning true or false:
 
 ```
@@ -124,13 +126,15 @@ or with getPoint(), which returns a TS_Point object:
 
 The Z-coordinate represents the amount of pressure applied to the screen.
 
-## Using BOTH XPT2036_Touchscreen AND Adafruit_ILI9341 (TFT LCD display) in your project
+## Adding mapping between touchscreen and display
 
-The pair of files *TS_ILI9341.h* and *.cpp* provide touch and release event services for responding to touch and release events, and mapping services to map between touchscreen coordinates and TFT LCD display coordinates. The display must use an ILI9341 controller, and the library requires the use of additional libraries *Adafruit_ILI9341* and *Adafruit-GFX-Library* to support the TFT display. If you want to use the touchscreen this way and you haven't done so already, add those libraries to your Arduino IDE.
+The pair of files *TS_ILI9341.h* and *.cpp* provide touch and release event services for responding to touch and release events, and mapping services to map between touchscreen coordinates and TFT LCD display coordinates. The display must use an ILI9341 controller, and the library requires the use of additional libraries *Adafruit_ILI9341* and *Adafruit_GFX_Library* to support the TFT display. If you want to use the touchscreen this way and you haven't done so already, add those libraries to your Arduino IDE.
+
+Touch and release events, which are the easiest way to interact with the touchscreen and TFT display, are described in a later section. However, you can always use the mapping functions independently to map coordinates between the touchscreen and TFT display, as follows.
 
 ### Include files
 
-At the start of your project .ino file, where you #include other files, #include *TS_ILI9341.h*:
+At the start of your project .ino file, #include *TS_ILI9341.h*:
 
 ```
 #include <TS_ILI9341.h>
@@ -202,19 +206,21 @@ In your Arduino setup() function, use *new* to allocate the three objects and as
   // Additional tft function calls would appear below to create the initial display screen.
 ```
 
-It is recommended you follow the above order, doing the TFT display *before* the touchscreen, with the TS_ILI9341 object initialization coming last.
+It is recommended you follow the above order, initializing the TFT display *before* the touchscreen, with the TS_ILI9341 object initialization coming last.
 
 After the above initializations, you will also want to call TFT display functions to create the initial screen on the display.
 
-### Reading touch information and finding its display coordinates without using touch/release events
+### Getting touch display coordinates with getPoint() and mapTStoDisplay()
 
-In your Arduino *loop()* function, you will monitor for screen touches and handle them. Define a global *boolean* variable *wasTouched* to keep track of whether or not the screen was touched but the touch has not yet been released (true) or has been released (false).
+There are two ways to monitor for screen touches and map them to display coordinates. The harder way is shown in this section, by using the *getPoint()* and *mapTStoDisplay()* functions. The next section shows the easier way using touch and release events.
+
+Initialization of the touchscreen is as shown above. To monitor for touch events in your Arduino *loop()* function, first define a global *boolean* variable *wasTouched* to keep track of whether or not the screen was touched but the touch has not yet been released (true) or has been released (false).
 
 ```
 boolean wasTouched = false;
 ```
 
-In the *loop()* function, call the touchscreen *touched()* function to test for a screen touch. If a touch occurred, ignore it if *wasTouched* is true (because the touch was already handled on a previous pass through the loop). If *wasTouched* is false, this is the first time you've seen this touch, so handle it. First, call the *getPoint()* function to get the touched point coordinates, and then pass those coordinates to the *TS_ILI9341* class function *mapTStoDisplay()* to map them to TFT display coordinates. You are then ready to use those coordinates to decide what you should do based on a user screen tap at that (x, y) position. For example:
+Next, in the Arduino standard *loop()* function, call the touchscreen *touched()* function to test for a screen touch. If a touch occurred, ignore it if *wasTouched* is true (because the touch was already handled on a previous pass through the loop). If *wasTouched* is false, this is the first time you've seen this touch, so handle it. First, call the *getPoint()* function to get the touched point coordinates, and then pass those coordinates to the *TS_ILI9341* class function *mapTStoDisplay()* to map them to TFT display coordinates. You are then ready to use those coordinates to decide what you should do based on a user screen tap at that (x, y) position. For example:
 
 ```
 void loop() {
@@ -244,35 +250,30 @@ void loop() {
 }
 ```
 
-### Responding to touches and releases using touch/release events
+## Using touch and release events
 
-In your Arduino *loop()* function, you will monitor for touchscreen touch and release events and handle them. In the *loop()* function, call the touchscreen-tft object's *getTouchEvent()* function to test for a touch or release event and handle it accordingly. For example:
+The easiest way to monitor touchscreen touches (and the end of the touch, also called a release) is to use touch and release events, supported by the TS_ILI9341 class, of which the touchscreen-tft object *(ts_display)* is an instance.
+
+Initialization is as shown in the previous sections above, including initializing the TFT display *(tft)*, touchscreen *(ts)*, and touchscreen-tft object *(ts_display)*. Then, in the standard Arduino *loop()* function, call the *ts_display* object's *getTouchEvent()* function to test for a touch or release event and handle it accordingly. For example:
 
 ```
 void loop() {
-  boolean isTouched = ts->touched();
-  if (isTouched) {
-    // Handle only if it wasn't previously touched.
-    if (!wasTouched) {
-      // Get the touched point.
-      TS_Point p = ts->getPoint();
-      // Map it to TFT display coordinates (x,y).
-      int16_t x, y;
-      ts_display->mapTStoDisplay(p.x, p.y, &x, &y);
-      // Here you can use (x,y) to either plot something at that position on the TFT
-      // or perhaps check to see if (x,y) lies within something you've displayed on
-      // the screen, such as a button.
-    }
-  } else {
-    // Handle release of a touch here.
-    if (wasTouched) {
-      // Here you can do anything you might need to do when the user releases a screen tap.
-      // There may be nothing to do, or perhaps you will choose to display something when he releases the tap.
-    }
-  }
+  int16_t x, y, pres, px, py;
+  eTouchEvent touchEvent = ts_display->getTouchEvent(x, y, pres, &px, &py);
 
-  // Set wasTouched for next time through the loop.
-  wasTouched = isTouched;
+  switch (touchEvent) {
+
+  case TS_TOUCH_EVENT:
+    // TOUCH EVENT at (x, y), pressure=pres, touchscreen at (px, py)
+    // Here you would do whatever you might need to do when the user taps the (x,y) position on the screen.
+    break;
+
+  case TS_RELEASE_EVENT:
+    // RELEASE EVENT, you would usually ignore x, y, pres, px, and py.
+    // Here you would do whatever you might need to do when the user releases the tap.
+    break;
+
+  }
 }
 ```
 
@@ -284,7 +285,7 @@ An example program is provided that illustrates calibration of the touchscreen. 
 
 ## Example programs
 
-Four example programs are provided in the library's *examples* subfolder. All four programs require that you set #define values near the start of the file to define the pin numbers connected to the touchscreen and in some cases to a TFT LCD display.
+Five example programs are provided in the library's *examples* subfolder. All of these programs require that you set #define values near the start of the file to define the pin numbers connected to the touchscreen and in some cases to a TFT LCD display.
 
 ### TouchTest.ino
 
@@ -297,6 +298,10 @@ Example program *TouchTestIRQ.ino* is just like *TouchTest.ino* except it uses i
 ### ILI9341Test.ino
 
 Example program *ILI9341Test.ino* assumes a touchscreen with XPT2346 controller connected to a TFT LCD display with an ILI9341 controller. It initializes the TFT and the touchscreen software and controllers, then waits for touches, displays their coordinates on the screen and in the IDE serial monitor window, and draws a green "+" at the display position to which the touched position maps (using the mapping class *TS_ILI9341*).
+
+### ILI9341Events.ino
+
+Example program *ILI9341Events.ino* illustrates how to use the simple touch and release event service to interact with the user's screen touches.
 
 ### ILI9341Calibrate.ino
 
