@@ -29,10 +29,10 @@
   This library makes the following changes to the original XPT2046_Touchscreen
   library by Paul Stoffregen:
 
-    1. Add new code files TS_ILI9341.h and .cpp, and new example program file
-        ILI9341Calibrate.ino, to support mapping touchscreen coordinates to/from
-        TFT LCD display coordinates and provide support for calibrating the
-        touchscreen-to-TFT mapping.
+    1. Add new code files TS_ILI9341.h and .cpp, and new example program files
+        ILI9341Events.ino and ILI9341Calibrate.ino, to support touchscreen touch
+        and release events, mapping touchscreen coordinates to/from TFT LCD
+        display coordinates, and calibrating the touchscreen-to-TFT mapping.
 
     2. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
 
