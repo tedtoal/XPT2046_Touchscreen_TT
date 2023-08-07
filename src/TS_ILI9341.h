@@ -1,6 +1,8 @@
 /*
-  TS_ILI9341_map.h - Support mapping coordinates between an XPT2046-controlled
-  touchscreen and an ILI9341-controlled TFT LCD display, with calibration.
+  TS_ILI9341.h - Support systems with an XPT2046-controlled touchscreen and
+  an ILI9341-controlled TFT LCD display, with functions for monitoring for touch
+  events, mapping of coordinates between touchscreen and display, and touch and
+  display mapping calibration.
   Created by Ted Toal, July 26, 2023
   Released into the public domain.
 
@@ -33,24 +35,31 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-  This file defines C++ class TS_ILI9341_map, which has member functions for
-  mapping coordinates between an XPT2046-controlled touchscreen and an
-  ILI9341-controlled TFT LCD display.
+  This file defines C++ class TS_ILI9341_map, useful in systems with an
+  XPT2046-controlled touchscreen and an ILI9341-controlled TFT LCD display.
+  It has member functions for generating touch and release events, mapping
+  coordinates between touchscreen and display, and calibrating the mapping.
 
-  This class provides two kinds of functions:
-   1. Functions to map between touchscreen and TFT display coordinates
-   2. Functions to get and set calibration parameters that control that mapping
+  This class provides three kinds of functions:
+    1. Functions to map between touchscreen and TFT display coordinates
+    2. Functions to test for touch and release events and set touch pressure
+        thresholds for them.
+    3. Functions to get and set calibration parameters that control that mapping
 
-  The first of the above function kinds is useful in any program that makes use
-  of an ILI9341-controlled TFT display and XPT2046-controlled touchscreen, for
+  The first of the above is useful in any program that makes use of an
+  ILI9341-controlled TFT display and XPT2046-controlled touchscreen, for
   converting between the coordinates used by those two devices.
 
-  The second of the above function kinds can be used together with user GUI code
-  to provide a screen where the user can touch two opposite corners of the
-  display, so the touchscreen coordinates of those points can be used to
-  calibrate the mapping. Although the default mapping parameter values work well
-  in most cases, calibration may be desirable because it seems that factory
-  calibration is not highly accurate.
+  The second of the above adds additional functionality to simple tests for
+  touches of the screen, providing "debouncing" and informing the user code of
+  touch events and release events and the display and touchscreen coordinates.
+
+  The third of the above can be used together with user GUI code to provide a
+  screen where the user can touch two opposite corners of the display, so the
+  touchscreen coordinates of those points can be used to calibrate the mapping.
+  Although the default mapping parameter values work well in most cases,
+  calibration may be desirable because it seems that factory calibration is not
+  highly accurate.
 
   The TS_ILI9341_map class stores the current calibrated values of these
   parameters in class variables. See example program ILI9341Calibrate.ino for
@@ -75,9 +84,41 @@
 #include <Adafruit_ILI9341.h>
 #include <XPT2046_Touchscreen_TT.h>
 
-class TS_ILI9341_map {
+// Default milliseconds of touch before touch recognized, or absence of touch
+// before release recognized.
+#define DEF_DEBOUNCE_MS_TR  20
 
-  protected:
+// Default minimum pressure for touch event, maximum for release event.
+#define DEF_MIN_TOUCH_PRES    5
+#define DEF_MAX_RELEASE_PRES  0
+
+/**************************************************************************/
+/*!
+  @brief    Enum eTouchEvent has five TS_ constants, two for touch and release
+            events and three for touched, released, or ambiguous states.
+
+  @param  TS_UNCERTAIN
+*/
+/**************************************************************************/
+typedef enum _eTouchEvent {
+  TS_UNCERTAIN,       /*! State, not event: ambiguous, maybe touched, maybe not. */
+  TS_NO_TOUCH,        /*! State, not event: screen not being touched. */
+  TS_TOUCH_PRESENT,   /*! State, not event: screen is being touched. */
+  TS_TOUCH_EVENT,     /*! Event: debounced touch, next event will be release. */
+  TS_RELEASE_EVENT    /*! Event: debounced release, next event will be touch. */
+} eTouchEvent;
+
+/**************************************************************************/
+/*!
+  @brief    Class TS_ILI9341 manages the interface between a touchscreen
+            controlled by an XPT_2046 controller and a pixel display controlled
+            by an ILI9341 controller, with functions for mapping coordinates,
+            generating touch and release events, and mapping calibration.
+*/
+/**************************************************************************/
+class TS_ILI9341 {
+
+protected:
 
   // The touchscreen object associated with the class instance using begin().
   XPT2046_Touchscreen* _ts;
@@ -106,19 +147,36 @@ class TS_ILI9341_map {
   // orientation.
   int16_t _TS_UL_X, _TS_UL_Y, _TS_LR_X, _TS_LR_Y;
 
-  // TFT display screen size in pixel (varies depending on rotation).
-  int16_t pixelsX;
-  int16_t pixelsY;
+  // Milliseconds of touch before touch recognized, or absence of touch before
+  // release recognized.
+  uint32_t _debounceMS_TR;
 
-  public:
+  // Minimum pressure for touch event, maximum for release event.
+  int16_t _minTouchPres, _maxReleasePres;
+
+private:
+
+  // true if last touchscreen event was a touch event, false if release event.
+  bool _lastEventWasTouch;
+
+  // Timer for debouncing.
+  ulong _msTime;
+
+  // TFT display screen size in pixel (varies depending on rotation).
+  int16_t _pixelsX;
+  int16_t _pixelsY;
+
+public:
 
   /**************************************************************************/
   /*!
     @brief  Constructor.
   */
   /**************************************************************************/
-  TS_ILI9341_map() : _ts(nullptr), _tft(nullptr), _TS_LR_X(0), _TS_LR_Y(0),
-      _TS_UL_X(0), _TS_UL_Y(0), pixelsX(0), pixelsY(0) {}
+  TS_ILI9341() : _ts(nullptr), _tft(nullptr), _TS_LR_X(0), _TS_LR_Y(0),
+      _TS_UL_X(0), _TS_UL_Y(0), _debounceMS_TR(DEF_DEBOUNCE_MS_TR),
+      _minTouchPres(DEF_MIN_TOUCH_PRES), _maxReleasePres(DEF_MAX_RELEASE_PRES),
+      _lastEventWasTouch(false), _msTime(millis()), _pixelsX(0), _pixelsY(0) {}
 
   /**************************************************************************/
   /*!
@@ -126,43 +184,55 @@ class TS_ILI9341_map {
     @param  ts    Pointer to the instance of the touchscreen object.
     @param  tft   Pointer to the instance of the TFT LCD display object.
     @note         Calibration parameters are reset to their default values.
-    @note         pixelsX and pixelsY are set appropriately.
+    @note         _pixelsX and _pixelsY are set appropriately.
   */
   /**************************************************************************/
   void begin(XPT2046_Touchscreen* ts, Adafruit_ILI9341* tft);
 
   /**************************************************************************/
   /*!
-    @brief  Return the current calibration parameter values.
-    @param  TS_LR_X    Pointer to variable to receive TS_LR_X value.
-    @param  TS_LR_Y    Pointer to variable to receive TS_LR_Y value.
-    @param  TS_UL_X    Pointer to variable to receive TS_UL_X value.
-    @param  TS_UL_Y    Pointer to variable to receive TS_UL_Y value.
+    @brief  Get current touchscreen state OR last touch or release event. An
+            event TS_TOUCH_EVENT or TS_RELEASE_EVENT is returned one time only
+            upon occurrence and debouncing of that event, and these alternate,
+            a release event ALWAYS (eventually) following a touch event. If
+            there is no event, the returned value indicates the current touch
+            state (touch present, touch absent, or uncertain).
+    @param  x     Reference to a variable in which to return the display
+                  x-coordinate corresponding to current touch position if any.
+    @param  y     Reference to a variable in which to return the display
+                  y-coordinate corresponding to current touch position if any.
+    @param  pres  Reference to a variable in which to return the current touch
+                  pressure, 0 if none.
+    @param  px    nullptr if not used, else a pointer to a variable to receive
+                  the current touchscreen x-coordinate.
+    @param  py    nullptr if not used, else a pointer to a variable to receive
+                  the current touchscreen y-coordinate.
+    @returns  A TS_ constant indicating a touch or release event if any, else
+              indicating the current touch state.
+    @note     A minimum time called the debounce time elapses before each touch
+              or release event.
   */
   /**************************************************************************/
-  void getTS_calibration(int16_t* TS_LR_X, int16_t* TS_LR_Y, int16_t* TS_UL_X,
-      int16_t* TS_UL_Y) {
-    *TS_LR_X = _TS_LR_X;
-    *TS_LR_Y = _TS_LR_Y;
-    *TS_UL_X = _TS_UL_X;
-    *TS_UL_Y = _TS_UL_Y;
-  }
+  eTouchEvent getTouchEvent(int16_t& x, int16_t& y, int16_t& pres,
+    int16_t* px=nullptr, int16_t* py=nullptr);
 
   /**************************************************************************/
   /*!
-    @brief  Set the current calibration parameter values.
-    @param  TS_LR_X    New TS_LR_X value.
-    @param  TS_LR_Y    New TS_LR_Y value.
-    @param  TS_UL_X    New TS_UL_X value.
-    @param  TS_UL_Y    New TS_UL_Y value.
+    @brief  Set parameters for touch/release event detection.
+    @param  debounceMS_TR       Number of milliseconds after start of a touch or
+                                release before the event is generated.
+    @param  minTouchPressure    Minimum pressure for a touch to be recognized.
+    @param  maxReleasePressure  Maximum pressure for a release to be recognized.
+    @note   A touch pressure > maxReleasePressure and < minTouchPressure is
+            considered to be ambiguous and is the TS_UNCERTAIN state.
+    @note   Generally the default values for these parameters should be okay.
   */
   /**************************************************************************/
-  void setTS_calibration(int16_t TS_LR_X, int16_t TS_LR_Y, int16_t TS_UL_X,
-      int16_t TS_UL_Y) {
-    _TS_LR_X = TS_LR_X;
-    _TS_LR_Y = TS_LR_Y;
-    _TS_UL_X = TS_UL_X;
-    _TS_UL_Y = TS_UL_Y;
+  void setTouchReleaseParams(uint32_t debounceMS_TR, int16_t minTouchPressure,
+      int16_t maxReleasePressure) {
+    _debounceMS_TR = debounceMS_TR;
+    _minTouchPres = minTouchPressure;
+    _maxReleasePres = maxReleasePressure;
   }
 
   /**************************************************************************/
@@ -175,7 +245,7 @@ class TS_ILI9341_map {
     @note   Mapping depends on the screen rotation, assumed to be fixed.
   */
   /**************************************************************************/
-  void mapTS_to_TFT(int16_t TSx, int16_t TSy, int16_t* x, int16_t* y);
+  void mapTStoDisplay(int16_t TSx, int16_t TSy, int16_t* x, int16_t* y);
 
   /**************************************************************************/
   /*!
@@ -187,7 +257,7 @@ class TS_ILI9341_map {
     @note   Mapping depends on the screen rotation, assumed to be fixed.
   */
   /**************************************************************************/
-  void mapTFT_to_TS(int16_t x, int16_t y, int16_t* TSx, int16_t* TSy);
+  void mapDisplayToTS(int16_t x, int16_t y, int16_t* TSx, int16_t* TSy);
 
   /**************************************************************************/
   /*!
@@ -237,6 +307,40 @@ class TS_ILI9341_map {
     int16_t y_LR, int16_t TSx_UL, int16_t TSy_UL, int16_t TSx_LR,
     int16_t TSy_LR, int16_t* TS_LR_X, int16_t* TS_LR_Y, int16_t* TS_UL_X,
     int16_t* TS_UL_Y);
+
+  /**************************************************************************/
+  /*!
+    @brief  Return the current calibration parameter values.
+    @param  TS_LR_X    Pointer to variable to receive TS_LR_X value.
+    @param  TS_LR_Y    Pointer to variable to receive TS_LR_Y value.
+    @param  TS_UL_X    Pointer to variable to receive TS_UL_X value.
+    @param  TS_UL_Y    Pointer to variable to receive TS_UL_Y value.
+  */
+  /**************************************************************************/
+  void getTS_calibration(int16_t* TS_LR_X, int16_t* TS_LR_Y, int16_t* TS_UL_X,
+      int16_t* TS_UL_Y) {
+    *TS_LR_X = _TS_LR_X;
+    *TS_LR_Y = _TS_LR_Y;
+    *TS_UL_X = _TS_UL_X;
+    *TS_UL_Y = _TS_UL_Y;
+  }
+
+  /**************************************************************************/
+  /*!
+    @brief  Set the current calibration parameter values.
+    @param  TS_LR_X    New TS_LR_X value.
+    @param  TS_LR_Y    New TS_LR_Y value.
+    @param  TS_UL_X    New TS_UL_X value.
+    @param  TS_UL_Y    New TS_UL_Y value.
+  */
+  /**************************************************************************/
+  void setTS_calibration(int16_t TS_LR_X, int16_t TS_LR_Y, int16_t TS_UL_X,
+      int16_t TS_UL_Y) {
+    _TS_LR_X = TS_LR_X;
+    _TS_LR_Y = TS_LR_Y;
+    _TS_UL_X = TS_UL_X;
+    _TS_UL_Y = TS_UL_Y;
+  }
 };
 
-#endif // TS_ILI9341_map_h
+#endif // TS_ILI9341_h

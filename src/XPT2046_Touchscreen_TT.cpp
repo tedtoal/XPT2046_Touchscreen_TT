@@ -31,76 +31,63 @@
 #define MSEC_THRESHOLD  3
 #define SPI_SETTING     SPISettings(2000000, MSBFIRST, SPI_MODE0)
 
+#if defined(_FLEXIO_SPI_H_)
+#define FLEXSPI_SETTING     FlexIOSPISettings(2000000, MSBFIRST, SPI_MODE0)
+#endif
+
 static XPT2046_Touchscreen 	*isrPinptr;
 void isrPin(void);
 
-bool XPT2046_Touchscreen::begin(SPIClass &wspi)
-{
-	_pspi = &wspi;
-	_pspi->begin();
-	pinMode(csPin, OUTPUT);
-	digitalWrite(csPin, HIGH);
-	if (255 != tirqPin) {
-		pinMode( tirqPin, INPUT );
-		attachInterrupt(digitalPinToInterrupt(tirqPin), isrPin, FALLING);
-		isrPinptr = this;
-	}
-	return true;
-}
-
-#if defined(_FLEXIO_SPI_H_)
-#define FLEXSPI_SETTING     FlexIOSPISettings(2000000, MSBFIRST, SPI_MODE0)
-bool XPT2046_Touchscreen::begin(FlexIOSPI &wflexspi)
-{
-	_pspi = nullptr; // make sure we dont use this one...
+bool XPT2046_Touchscreen::begin(
+  #if defined(_FLEXIO_SPI_H_)
+    FlexIOSPI &wflexspi) {
 	_pflexspi = &wflexspi;
 	_pflexspi->begin();
+  #else
+    SPIClass &wspi) {
+	_pspi = &wspi;
+	_pspi->begin();
+  #endif
 	pinMode(csPin, OUTPUT);
 	digitalWrite(csPin, HIGH);
 	if (255 != tirqPin) {
-		pinMode( tirqPin, INPUT );
+		pinMode(tirqPin, INPUT);
 		attachInterrupt(digitalPinToInterrupt(tirqPin), isrPin, FALLING);
 		isrPinptr = this;
 	}
+	xraw = yraw = zraw = 0;
+	isrWake = true;
 	return true;
 }
-#endif
-
 
 ISR_PREFIX
-void isrPin( void )
-{
+void isrPin( void ) {
 	XPT2046_Touchscreen *o = isrPinptr;
-	o->isrWake = true;
+	o->set_isrWake(true);
 }
 
-TS_Point XPT2046_Touchscreen::getPoint()
-{
+TS_Point XPT2046_Touchscreen::getPoint() {
 	update();
 	return TS_Point(xraw, yraw, zraw);
 }
 
-bool XPT2046_Touchscreen::tirqTouched()
-{
+bool XPT2046_Touchscreen::tirqTouched() {
 	return (isrWake);
 }
 
-bool XPT2046_Touchscreen::touched()
-{
+bool XPT2046_Touchscreen::touched() {
 	update();
 	return (zraw >= Z_Threshold);
 }
 
-void XPT2046_Touchscreen::readData(uint16_t *x, uint16_t *y, uint8_t *z)
-{
+void XPT2046_Touchscreen::readData(uint16_t *x, uint16_t *y, uint8_t *z) {
 	update();
 	*x = xraw;
 	*y = yraw;
 	*z = zraw;
 }
 
-bool XPT2046_Touchscreen::bufferEmpty()
-{
+bool XPT2046_Touchscreen::bufferEmpty() {
 	return ((millis() - msraw) < MSEC_THRESHOLD);
 }
 
@@ -121,36 +108,14 @@ static int16_t besttwoavg( int16_t x , int16_t y , int16_t z ) {
 // TODO: perhaps a future version should offer an option for more oversampling,
 //       with the RANSAC algorithm https://en.wikipedia.org/wiki/RANSAC
 
-void XPT2046_Touchscreen::update()
-{
+void XPT2046_Touchscreen::update() {
 	int16_t data[6];
 	int z;
 	if (!isrWake) return;
 	uint32_t now = millis();
 	if (now - msraw < MSEC_THRESHOLD) return;
-	if (_pspi) {
-		_pspi->beginTransaction(SPI_SETTING);
-		digitalWrite(csPin, LOW);
-		_pspi->transfer(0xB1 /* Z1 */);
-		int16_t z1 = _pspi->transfer16(0xC1 /* Z2 */) >> 3;
-		z = z1 + 4095;
-		int16_t z2 = _pspi->transfer16(0x91 /* X */) >> 3;
-		z -= z2;
-		if (z >= Z_Threshold) {
-			_pspi->transfer16(0x91 /* X */);  // dummy X measure, 1st is always noisy
-			data[0] = _pspi->transfer16(0xD1 /* Y */) >> 3;
-			data[1] = _pspi->transfer16(0x91 /* X */) >> 3; // make 3 x-y measurements
-			data[2] = _pspi->transfer16(0xD1 /* Y */) >> 3;
-			data[3] = _pspi->transfer16(0x91 /* X */) >> 3;
-		}
-		else data[0] = data[1] = data[2] = data[3] = 0;	// Compiler warns these values may be used unset on early exit.
-		data[4] = _pspi->transfer16(0xD0 /* Y */) >> 3;	// Last Y touch power down
-		data[5] = _pspi->transfer16(0) >> 3;
-		digitalWrite(csPin, HIGH);
-		_pspi->endTransaction();
-	}
 #if defined(_FLEXIO_SPI_H_)
-	else if (_pflexspi) {
+	if (_pflexspi) {
 		_pflexspi->beginTransaction(FLEXSPI_SETTING);
 		digitalWrite(csPin, LOW);
 		_pflexspi->transfer(0xB1 /* Z1 */);
@@ -171,6 +136,28 @@ void XPT2046_Touchscreen::update()
 		digitalWrite(csPin, HIGH);
 		_pflexspi->endTransaction();
 
+	}
+#else
+	if (_pspi) {
+		_pspi->beginTransaction(SPI_SETTING);
+		digitalWrite(csPin, LOW);
+		_pspi->transfer(0xB1 /* Z1 */);
+		int16_t z1 = _pspi->transfer16(0xC1 /* Z2 */) >> 3;
+		z = z1 + 4095;
+		int16_t z2 = _pspi->transfer16(0x91 /* X */) >> 3;
+		z -= z2;
+		if (z >= Z_Threshold) {
+			_pspi->transfer16(0x91 /* X */);  // dummy X measure, 1st is always noisy
+			data[0] = _pspi->transfer16(0xD1 /* Y */) >> 3;
+			data[1] = _pspi->transfer16(0x91 /* X */) >> 3; // make 3 x-y measurements
+			data[2] = _pspi->transfer16(0xD1 /* Y */) >> 3;
+			data[3] = _pspi->transfer16(0x91 /* X */) >> 3;
+		}
+		else data[0] = data[1] = data[2] = data[3] = 0;	// Compiler warns these values may be used unset on early exit.
+		data[4] = _pspi->transfer16(0xD0 /* Y */) >> 3;	// Last Y touch power down
+		data[5] = _pspi->transfer16(0) >> 3;
+		digitalWrite(csPin, HIGH);
+		_pspi->endTransaction();
 	}
 #endif
 	// If we do not have either _pspi or _pflexspi then bail.

@@ -29,10 +29,10 @@
   This library makes the following changes to the original XPT2046_Touchscreen
   library by Paul Stoffregen:
 
-    1. Add new code files TS_ILI9341_map.h and .cpp, and new example program
-        file ILI9341Calibrate.ino, to support mapping touchscreen coordinates
-        to/from TFT LCD display coordinates and provide support for calibrating
-        the touchscreen-to-TFT mapping.
+    1. Add new code files TS_ILI9341.h and .cpp, and new example program file
+        ILI9341Calibrate.ino, to support mapping touchscreen coordinates to/from
+        TFT LCD display coordinates and provide support for calibrating the
+        touchscreen-to-TFT mapping.
 
     2. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
 
@@ -91,6 +91,12 @@
 #define Z_THRESHOLD     400
 #define Z_THRESHOLD_INT	75
 
+/**************************************************************************/
+/*!
+  @brief    Class TS_Point holds a touchscreen "point" (x, y, z), where (x,y) is
+            a touchscreen coordinate position and z is the touch pressure.
+*/
+/**************************************************************************/
 class TS_Point {
 public:
   /**************************************************************************/
@@ -131,8 +137,52 @@ public:
 	int16_t x, y, z;
 };
 
+/**************************************************************************/
+/*!
+  @brief    Class XPT2046_Touchscreen manages a touchscreen controlled by an
+            XPT_2046 controller, with functions for sensing touches.
+*/
+/**************************************************************************/
 class XPT2046_Touchscreen {
+
+private:
+
+  // Test touch pressure and update xraw/yraw/zraw and msraw.
+	void update();
+
+	// Pins interfacing to controller.
+	uint8_t csPin, tirqPin;
+
+  // Touchscreen rotation, 0-3, meaning same as ILI9341 rotation.
+	uint8_t rotation;
+
+	// Touchscreen most recently read coordinates (xraw,yraw) and pressure (zraw).
+	int16_t xraw, yraw, zraw;
+
+  // Touchscreen pressure threshold for touch.
+	int16_t Z_Threshold;
+
+  // Touchscreen pressure threshold for clearing isrWake flag.
+	int16_t Z_Threshold_Int;
+
+	// Millisecond time used to require a 3ms period of touch before touch is
+	// registered.
+	uint32_t msraw=0x80000000;
+
+  #if defined(_FLEXIO_SPI_H_)
+	// Pointer to FlexIOSPI SPI device connected to controller, nullptr if none.
+	FlexIOSPI *_pflexspi;
+  #else
+	// Pointer to SPIClass SPI device connected to controller, nullptr if none.
+	SPIClass *_pspi;
+  #endif
+
+  // true when touchscreen interrupt occurs, cleared when touch pressure under
+  // Z_Threshold_Int is detected.
+	volatile bool isrWake;
+
 public:
+
   /**************************************************************************/
   /*!
     @brief    Construct an XPT2046_Touchscreen object.
@@ -143,29 +193,35 @@ public:
   */
   /**************************************************************************/
 	constexpr XPT2046_Touchscreen(uint8_t cspin, uint8_t tirq=255)
-		: csPin(cspin), tirqPin(tirq) { }
+		: csPin(cspin), tirqPin(tirq), rotation(1), xraw(0), yraw(0), zraw(0),
+		  Z_Threshold(Z_THRESHOLD), Z_Threshold_Int(Z_THRESHOLD_INT),
+		  msraw(0x80000000),
+      #if defined(_FLEXIO_SPI_H_)
+      _pflexspi(nullptr),
+      #else
+       _pspi(nullptr),
+      #endif
+		  isrWake(true) {
+	  }
 
-  /**************************************************************************/
-  /*!
-    @brief    Initialize the XPT2046 and optionally establish interrupts.
-    @param    wspi  Reference to the serial peripheral interface device that
-                    is connected to the XPT2046.
-    @returns  true if successful, false if failure
-  */
-  /**************************************************************************/
-	bool begin(SPIClass &wspi = SPI);
-
-#if defined(_FLEXIO_SPI_H_)
   /**************************************************************************/
   /*!
     @brief    Initialize the XPT2046 and optionally establish interrupts.
     @param    wflexspi  Reference to the FlexIOSPIdevice that is connected to
-                        the XPT2046.
+                        the XPT2046. Argument only present if _FLEXIO_SP_H is
+                        defined.
+    @param    wspi      Reference to the serial peripheral interface device that
+                        is connected to the XPT2046. Argument only present if
+                        _FLEXIO_SP_H is not defined.
     @returns  true if successful, false if failure
   */
   /**************************************************************************/
-	bool begin(FlexIOSPI &wflexspi);
-#endif
+	bool begin(
+    #if defined(_FLEXIO_SPI_H_)
+    FlexIOSPI &wflexspi);
+    #else
+  	SPIClass &wspi = SPI);
+    #endif
 
   /**************************************************************************/
   /*!
@@ -272,19 +328,14 @@ public:
   /**************************************************************************/
 	int16_t Zthreshold_Int() { return(Z_Threshold_Int); }
 
-// protected:
-	volatile bool isrWake=true;
+  /**************************************************************************/
+  /*!
+    @brief    Set isrWake value.
+    @param    value   The value to which to set isrWake.
+  */
+  /**************************************************************************/
+	void set_isrWake(bool value) { isrWake = value; }
 
-private:
-	void update();
-	uint8_t csPin, tirqPin, rotation=1;
-	int16_t xraw=0, yraw=0, zraw=0;
-	int16_t Z_Threshold=Z_THRESHOLD, Z_Threshold_Int=Z_THRESHOLD_INT;
-	uint32_t msraw=0x80000000;
-	SPIClass *_pspi = nullptr;
-#if defined(_FLEXIO_SPI_H_)
-	FlexIOSPI *_pflexspi = nullptr;
-#endif
 };
 
 #ifndef ISR_PREFIX

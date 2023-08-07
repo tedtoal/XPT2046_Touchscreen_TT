@@ -29,7 +29,7 @@
   and watch the serial monitor window at 115200 bps.
 */
 #include <Arduino.h>
-#include <TS_ILI9341_map.h>
+#include <TS_ILI9341.h>
 #include <Fonts/FreeSans9pt7b.h> // From Adafruit-GFX-Library
 
 #define TFT_CS_PIN    10
@@ -52,8 +52,8 @@ XPT2046_Touchscreen* ts;
 // Pointer to TFT LCD display object.
 Adafruit_ILI9341* tft;
 
-// Pointer to touchscreen-TFT mapping object.
-TS_ILI9341_map* tsmap;
+// Pointer to touchscreen-TFT object.
+TS_ILI9341* ts_display;
 
 void setup() {
   delay(1000);
@@ -79,9 +79,9 @@ void setup() {
   ts->begin();
   ts->setRotation(tft->getRotation());
 
-  // Allocate and initialize the touchscreen-tft mapping object.
-  tsmap = new TS_ILI9341_map();
-  tsmap->begin(ts, tft);
+  // Allocate and initialize the touchscreen-tft object.
+  ts_display = new TS_ILI9341();
+  ts_display->begin(ts, tft);
 
   // Set and show pressure threshold.
   ts->setThresholds(Z_THRESHOLD/3);
@@ -122,7 +122,7 @@ void loop() {
       Serial.print(", z = ");
       Serial.println(p.z);
       int16_t x, y;
-      tsmap->mapTS_to_TFT(p.x, p.y, &x, &y);
+      ts_display->mapTStoDisplay(p.x, p.y, &x, &y);
       tft->drawFastVLine(x, y-10, 20, ILI9341_BLUE);
       tft->drawFastHLine(x-10, y, 20, ILI9341_BLUE);
     }

@@ -11,10 +11,12 @@ setRotation	KEYWORD2
 setThresholds	KEYWORD2
 Zthreshold	KEYWORD2
 Zthreshold_Int	KEYWORD2
-TS_ILI9341_map	KEYWORD1
+TS_ILI9341	KEYWORD1
+getTouchEvent	KEYWORD2
+setTouchReleaseParams	KEYWORD2
 getTS_calibration	KEYWORD2
 setTS_calibration	KEYWORD2
-mapTS_to_TFT	KEYWORD2
-mapTFT_to_TS	KEYWORD2
+mapTStoDisplay	KEYWORD2
+mapDisplayToTS	KEYWORD2
 GetCalibration_UL_LR	KEYWORD2
 findTS_calibration	KEYWORD2

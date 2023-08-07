@@ -42,9 +42,9 @@
   them) or incorporate similar touchscreen calibration logic to this into your
   project.
 
-  Also, in your project, allocate and initialize a 'tsmap' object the same as
-  done here, and use it for mapping touchscreen point coordinates to TFT display
-  coordinates.
+  Also, in your project, allocate and initialize a 'ts_display' object the same
+  as done here, and use it for mapping touchscreen point coordinates to TFT
+  display coordinates.
 
   If the SAMD architecture is being used (ARDUINO_ARCH_SAMD), this stores the
   calibration values in the microprocessor EEPROM using the library module
@@ -56,7 +56,7 @@
 #include <Arduino.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <TS_ILI9341_map.h>
+#include <TS_ILI9341.h>
 #include <Fonts/FreeSans9pt7b.h> // From Adafruit-GFX-Library
 #include <monitor_printf.h>
 
@@ -153,11 +153,11 @@ struct nonvolatileSettings {
 // Pointer to touchscreen object.
 XPT2046_Touchscreen* ts;
 
-// Pointer to touchscreen mapping object.
-TS_ILI9341_map* tsmap;
-
 // Pointer to TFT LCD display object.
 Adafruit_ILI9341* tft;
+
+// Pointer to touchscreen/TFT LCD display object.
+TS_ILI9341* ts_display;
 
 // TFT UL and LR corner positions and corresponding touchscreen corner coordinates.
 int16_t x_ULcorner, y_ULcorner, x_LRcorner, y_LRcorner;
@@ -291,24 +291,24 @@ void setup() {
   ts->begin();
   ts->setRotation(tft->getRotation());
 
-  // Create touchscreen-to-TFT map object and initialize it.
-  tsmap = new TS_ILI9341_map();
-  tsmap->begin(ts, tft);
+  // Create touchscreen-TFT object and initialize it.
+  ts_display = new TS_ILI9341();
+  ts_display->begin(ts, tft);
 
   // Make 'defaults' hold the default non-volatile settings when the settings
   // are first initialized. Here, we get the initial calibration settings from
-  // tsmap.
+  // ts_display.
   nonvolatileSettings defaults;
-  tsmap->getTS_calibration(&defaults.TS_LR_X, &defaults.TS_LR_Y, &defaults.TS_UL_X,
+  ts_display->getTS_calibration(&defaults.TS_LR_X, &defaults.TS_LR_Y, &defaults.TS_UL_X,
     &defaults.TS_UL_Y);
   showNVsettings("Calibration setting defaults:", defaults);
 
   // EEPROM support currently only if SAMD architecture.
   #ifdef ARDUINO_ARCH_SAMD
   // Read non-volatile settings from flash-based EEPROM into 'NVsettings', then
-  // set them as the current calibration settings in 'tsmap'.
+  // set them as the current calibration settings in 'ts_display'.
   readNonvolatileSettings(NVsettings, defaults);
-  tsmap->setTS_calibration(NVsettings.TS_LR_X, NVsettings.TS_LR_Y, NVsettings.TS_UL_X,
+  ts_display->setTS_calibration(NVsettings.TS_LR_X, NVsettings.TS_LR_Y, NVsettings.TS_UL_X,
     NVsettings.TS_UL_Y);
   showNVsettings("Non-volatile EEPROM calibration settings:", NVsettings);
   #else
@@ -323,7 +323,7 @@ void setup() {
 
   // Get position of two TFT points at which to draw "+" signs and require that
   // the user click them to calibrate the touchscreen.
-  tsmap->GetCalibration_UL_LR(PLUS_ARM_LEN+2, &x_UL, &y_UL, &x_LR, &y_LR);
+  ts_display->GetCalibration_UL_LR(PLUS_ARM_LEN+2, &x_UL, &y_UL, &x_LR, &y_LR);
 
   // Paint first "+" and wait for user to click that point.
   tft->fillScreen(COLOR_BKGD);
@@ -395,12 +395,12 @@ void loop() {
       state = STATE_WAIT_RELEASE;
       // Map the two touchscreen points to the correct calibration values at the
       // extreme ends of the display. Put resulting calibration parameters into
-      // NVsettings and set them as the new calibration parameters in tsmap, as
-      // well as writing them to the EEPROM.
-      tsmap->findTS_calibration(x_UL, y_UL, x_LR, y_LR, TSx_UL, TSy_UL, TSx_LR,
+      // NVsettings and set them as the new calibration parameters in ts_display,
+      // as well as writing them to the EEPROM.
+      ts_display->findTS_calibration(x_UL, y_UL, x_LR, y_LR, TSx_UL, TSy_UL, TSx_LR,
         TSy_LR, &NVsettings.TS_LR_X, &NVsettings.TS_LR_Y, &NVsettings.TS_UL_X,
         &NVsettings.TS_UL_Y);
-      tsmap->setTS_calibration(NVsettings.TS_LR_X, NVsettings.TS_LR_Y,
+      ts_display->setTS_calibration(NVsettings.TS_LR_X, NVsettings.TS_LR_Y,
         NVsettings.TS_UL_X, NVsettings.TS_UL_Y);
       // EEPROM support currently only if SAMD architecture.
       #ifdef ARDUINO_ARCH_SAMD
@@ -411,8 +411,8 @@ void loop() {
       showNVsettings("Calibration results:", NVsettings);
 
       // Show the display corner points calibration mapping on the display.
-      tsmap->mapTFT_to_TS(x_ULcorner, y_ULcorner, &TSx_ULcorner, &TSy_ULcorner);
-      tsmap->mapTFT_to_TS(x_LRcorner, y_LRcorner, &TSx_LRcorner, &TSy_LRcorner);
+      ts_display->mapDisplayToTS(x_ULcorner, y_ULcorner, &TSx_ULcorner, &TSy_ULcorner);
+      ts_display->mapDisplayToTS(x_LRcorner, y_LRcorner, &TSx_LRcorner, &TSy_LRcorner);
       tft_printf(10, 110, COLOR_TEXT, "UL (%d, %d) maps to:", x_ULcorner, y_ULcorner);
       showTS_XY(10, 130, TSx_ULcorner, TSy_ULcorner);
       tft_printf(10, 150, COLOR_TEXT, "LR (%d, %d) maps to:", x_LRcorner, y_LRcorner);
@@ -437,7 +437,7 @@ void loop() {
       state = STATE_WAIT_RELEASE;
       // Map touched point to TFT, erase screen, and draw a green "+" at that point.
       int16_t x, y;
-      tsmap->mapTS_to_TFT(p.x, p.y, &x, &y);
+      ts_display->mapTStoDisplay(p.x, p.y, &x, &y);
       tft->fillRect(x_ULcorner, y_ULcorner, tft->width(), tft->height(), COLOR_BKGD);
       drawPlus(x, y, COLOR_PLUS_TEST);
       monitor.printf("Random touch at x = %d, y = %d maps to (%d, %d)\n", p.x, p.y, x, y);
