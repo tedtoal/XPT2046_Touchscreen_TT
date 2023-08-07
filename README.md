@@ -6,7 +6,7 @@
 
 ## List of changes to Paul Stoffregen's version of the library
 
-**1.** Add new code files *TS_ILI9341_map.h* and *.cpp*, and new example program file *ILI9341Calibrate.ino*, to support **mapping touchscreen coordinates to/from TFT LCD display coordinates** and **provide support for calibrating the touchscreen-to-TFT mapping**.
+**1.** Add new code files *TS_ILI9341.h* and *.cpp*, and new example program file *ILI9341Calibrate.ino*, to support **mapping touchscreen coordinates to/from TFT LCD display coordinates** and **provide support for calibrating the touchscreen-to-TFT mapping**.
 
 **2.** New function *setThresholds()* allows **dynamically setting the pressure thresholds** previously hard-coded as Z_THRESHOLD and Z_THRESHOLD_INT, now stored in variables Z_Threshold and Z_Threshold_Int. (The defines of Z_THRESHOLD and Z_THRESHOLD_INT were moved from *XPT2046_Touchscreen_TT.cpp* to *XPT2046_Touchscreen_TT.h*.)
 
@@ -126,14 +126,14 @@ The Z-coordinate represents the amount of pressure applied to the screen.
 
 ## Using BOTH XPT2036_Touchscreen AND Adafruit_ILI9341 (TFT LCD display) in your project
 
-The pair of files *TS_ILI9341_map.h* and *.cpp* provide mapping services to map between touchscreen coordinates and TFT LCD display coordinates. The display must use an ILI9341 controller, and the library requires the use of additional libraries *Adafruit_ILI9341* and *Adafruit-GFX-Library* to support the TFT display. If you want to use the touchscreen this way and you haven't done so already, add those libraries to your Arduino IDE.
+The pair of files *TS_ILI9341.h* and *.cpp* provide mapping services to map between touchscreen coordinates and TFT LCD display coordinates. The display must use an ILI9341 controller, and the library requires the use of additional libraries *Adafruit_ILI9341* and *Adafruit-GFX-Library* to support the TFT display. If you want to use the touchscreen this way and you haven't done so already, add those libraries to your Arduino IDE.
 
 ### Include files
 
-At the start of your project .ino file, where you #include other files, #include *TS_ILI9341_map.h*:
+At the start of your project .ino file, where you #include other files, #include *TS_ILI9341.h*:
 
 ```
-#include <TS_ILI9341_map.h>
+#include <TS_ILI9341.h>
 ```
 
 Including the above file also causes the following to automatically be included:
@@ -167,7 +167,7 @@ For the TFT display, define the pins used by the display controller CS and DC si
 
 ### Create file-level variables for the touchscreen, display, and touchscreen/display map objects
 
-Before the start of function definitions in your project .ino file, define three pointer variables that point to XPT2046_Touchscreen, Adafruit_ILI9341, and TS_ILI9341_map objects. The objects will be created in setup() and assigned to these pointer variables. For example:
+Before the start of function definitions in your project .ino file, define three pointer variables that point to XPT2046_Touchscreen, Adafruit_ILI9341, and TS_ILI9341 objects. The objects will be created in setup() and assigned to these pointer variables. For example:
 
 ```
 // Pointer to touchscreen object.
@@ -175,7 +175,7 @@ XPT2046_Touchscreen* ts;
 // Pointer to TFT LCD display object.
 Adafruit_ILI9341* tft;
 // Pointer to touchscreen-TFT mapping object.
-TS_ILI9341_map* tsmap;
+TS_ILI9341* tsmap;
 ```
 
 ### Initialization in setup()
@@ -196,7 +196,7 @@ In your Arduino setup() function, use *new* to allocate the three objects and as
   ts->setRotation(tft->getRotation()); // Use same rotation as TFT display.
 
   // Allocate and initialize the touchscreen-tft mapping object.
-  tsmap = new TS_ILI9341_map();
+  tsmap = new TS_ILI9341();
   tsmap->begin(ts, tft);
 
   // Additional tft function calls would appear below to create the initial display screen.
@@ -214,7 +214,7 @@ In your Arduino *loop()* function, you will monitor for screen touches and handl
 boolean wasTouched = false;
 ```
 
-In the *loop()* function, call the touchscreen *touched()* function to test for a screen touch. If a touch occurred, ignore it if *wasTouched* is true (because the touch was already handled on a previous pass through the loop). If *wasTouched* is false, this is the first time you've seen this touch, so handle it. First, call the *getPoint()* function to get the touched point coordinates, and then pass those coordinates to the *TS_ILI9341_map* class function *mapTS_to_TFT()* to map them to TFT display coordinates. You are then ready to use those coordinates to decide what you should do based on a user screen tap at that (x, y) position. For example:
+In the *loop()* function, call the touchscreen *touched()* function to test for a screen touch. If a touch occurred, ignore it if *wasTouched* is true (because the touch was already handled on a previous pass through the loop). If *wasTouched* is false, this is the first time you've seen this touch, so handle it. First, call the *getPoint()* function to get the touched point coordinates, and then pass those coordinates to the *TS_ILI9341* class function *mapTStoDisplay()* to map them to TFT display coordinates. You are then ready to use those coordinates to decide what you should do based on a user screen tap at that (x, y) position. For example:
 
 ```
 void loop() {
@@ -226,7 +226,7 @@ void loop() {
       TS_Point p = ts->getPoint();
       // Map it to TFT display coordinates (x,y).
       int16_t x, y;
-      tsmap->mapTS_to_TFT(p.x, p.y, &x, &y);
+      tsmap->mapTStoDisplay(p.x, p.y, &x, &y);
       // Here you can use (x,y) to either plot something at that position on the TFT
       // or perhaps check to see if (x,y) lies within something you've displayed on
       // the screen, such as a button.
@@ -246,7 +246,7 @@ void loop() {
 
 ## Calibrating the touchscreen
 
-The mapping class *TS_ILI9341_map* introduced in the previous section also includes functions for calibrating the relationship between touchscreen coordinates and TFT display coordinates. Although the default calibration is okay, it isn't as ideal as it could be. Touchscreens seem to vary a bit from one to another, and the different rotations also behave differently.
+The mapping class *TS_ILI9341* introduced in the previous section also includes functions for calibrating the relationship between touchscreen coordinates and TFT display coordinates. Although the default calibration is okay, it isn't as ideal as it could be. Touchscreens seem to vary a bit from one to another, and the different rotations also behave differently.
 
 An example program is provided that illustrates calibration of the touchscreen. It also shows how to save the calibration values in EEPROM so they can be retrieved following a power-down and powering back up. It is described in a following section.
 
@@ -264,7 +264,7 @@ Example program *TouchTestIRQ.ino* is just like *TouchTest.ino* except it uses i
 
 ### ILI9341Test.ino
 
-Example program *ILI9341Test.ino* assumes a touchscreen with XPT2346 controller connected to a TFT LCD display with an ILI9341 controller. It initializes the TFT and the touchscreen software and controllers, then waits for touches, displays their coordinates on the screen and in the IDE serial monitor window, and draws a green "+" at the display position to which the touched position maps (using the mapping class *TS_ILI9341_map*).
+Example program *ILI9341Test.ino* assumes a touchscreen with XPT2346 controller connected to a TFT LCD display with an ILI9341 controller. It initializes the TFT and the touchscreen software and controllers, then waits for touches, displays their coordinates on the screen and in the IDE serial monitor window, and draws a green "+" at the display position to which the touched position maps (using the mapping class *TS_ILI9341*).
 
 ### ILI9341Calibrate.ino
 
