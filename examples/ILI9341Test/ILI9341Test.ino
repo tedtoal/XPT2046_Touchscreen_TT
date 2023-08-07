@@ -1,5 +1,6 @@
 /*
-  ILI9341Test.ino - A program to test the touchscreen library functions.
+  ILI9341Test.ino - A program to test the touchscreen library functions,
+  excluding testing of touch/release events.
   Copied from Paul Stoffregen's XPT2046_Touchscreen project.
 
   Copyright (c) 2015, Paul Stoffregen, paul@pjrc.com
