@@ -29,10 +29,10 @@
   This library makes the following changes to the original XPT2046_Touchscreen
   library by Paul Stoffregen:
 
-    1. Add new code files TS_ILI9341.h and .cpp, and new example program files
-        ILI9341Events.ino and ILI9341Calibrate.ino, to support touchscreen touch
-        and release events, mapping touchscreen coordinates to/from TFT LCD
-        display coordinates, and calibrating the touchscreen-to-TFT mapping.
+    1. Add new code files TS_display.h and .cpp, and new example program files
+        TS_DisplayEvents.ino and TS_DisplayCalibrate.ino, to support touchscreen
+        touch and release events, mapping touchscreen coordinates to/from
+        display coordinates, and calibrating the touchscreen-to-display mapping.
 
     2. Move defines of Z_THRESHOLD and Z_THRESHOLD_INT from .cpp to .h file.
 
@@ -50,10 +50,10 @@
 
     7. Example programs have been changed:
 
-        - Use Adafruit-GFX-Library and Adafruit_ILI9341 libraries in place of
+        - Use Adafruit_GFX_Library and Adafruit_ILI9341 libraries in place of
           ILI9341_t3 library.
 
-        - Use Adafruit-GFX-library FreeSans12pt7b font in place of Arial fonts
+        - Use Adafruit_GFX_library FreeSans12pt7b font in place of Arial fonts
           from ILI9341_t3 library.
 
         - Set serial monitor speed to 115,200 bps instead of 38,400 bps.
@@ -63,11 +63,11 @@
 
         - Use longer names for _PIN #defines.
 
-        - Allocate tft and touchscreen objects with new.
+        - Allocate display and touchscreen objects with "new".
 
         - Adjust Serial initialization to start up better.
 
-        - ILI9341Test.ino now uses new files TS_ILI9341.h/.cpp to display a "+"
+        - ILI9341Test.ino now uses new files TS_Display.h/.cpp to display a "+"
           on the display at the tapped point, and it doesn't repeatedly write
           data to monitor and display, but only during a tap or untap.
 */
@@ -153,7 +153,7 @@ private:
 	// Pins interfacing to controller.
 	uint8_t csPin, tirqPin;
 
-  // Touchscreen rotation, 0-3, meaning same as ILI9341 rotation.
+  // Touchscreen rotation, 0-3, meaning same as display rotation.
 	uint8_t rotation;
 
 	// Touchscreen most recently read coordinates (xraw,yraw) and pressure (zraw).

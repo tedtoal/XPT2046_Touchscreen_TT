@@ -57,7 +57,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <TS_ILI9341.h>
-#include <Fonts/FreeSans9pt7b.h> // From Adafruit-GFX-Library
+#include <Fonts/FreeSans9pt7b.h> // From Adafruit_GFX_Library
 #include <monitor_printf.h>
 
 // EEPROM support currently only if SAMD architecture.

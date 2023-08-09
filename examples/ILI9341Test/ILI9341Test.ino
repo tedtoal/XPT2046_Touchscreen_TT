@@ -31,7 +31,7 @@
 */
 #include <Arduino.h>
 #include <TS_ILI9341.h>
-#include <Fonts/FreeSans9pt7b.h> // From Adafruit-GFX-Library
+#include <Fonts/FreeSans9pt7b.h> // From Adafruit_GFX_Library
 
 #define TFT_CS_PIN    10
 #define TFT_DC_PIN    2
