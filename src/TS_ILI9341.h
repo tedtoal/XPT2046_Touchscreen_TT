@@ -1,8 +1,8 @@
 /*
-  TS_ILI9341.h - Support systems with an XPT2046-controlled touchscreen and
-  an ILI9341-controlled TFT LCD display, with functions for monitoring for touch
-  events, mapping of coordinates between touchscreen and display, and touch and
-  display mapping calibration.
+  TS_Display.h - Defines C++ class TS_Display, which supports systems with an
+  XPT2046-controlled touchscreen and a pixel-based display, with functions for
+  monitoring for touch events, mapping coordinates between touchscreen and
+  display, and touchscreen/display mapping calibration.
   Created by Ted Toal, July 26, 2023
   Released into the public domain.
 
@@ -35,20 +35,22 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-  This file defines C++ class TS_ILI9341_map, useful in systems with an
-  XPT2046-controlled touchscreen and an ILI9341-controlled TFT LCD display.
-  It has member functions for generating touch and release events, mapping
-  coordinates between touchscreen and display, and calibrating the mapping.
+  This file defines C++ class TS_Display, useful in systems with an
+  XPT2046-controlled touchscreen and a pixel-based display. The only requirement
+  for the display is that it is controlled by an instance of a class that is
+  derived from the graphics support class Adafruit_GFX. The TS_disp class has
+  member functions for generating touch and release events, mapping coordinates
+  between touchscreen and display, and calibrating the mapping.
 
   This class provides three kinds of functions:
-    1. Functions to map between touchscreen and TFT display coordinates
+    1. Functions to map between touchscreen and display coordinates
     2. Functions to test for touch and release events and set touch pressure
         thresholds for them.
     3. Functions to get and set calibration parameters that control that mapping
 
-  The first of the above is useful in any program that makes use of an
-  ILI9341-controlled TFT display and XPT2046-controlled touchscreen, for
-  converting between the coordinates used by those two devices.
+  The first of the above is useful in any program that makes use of a
+  pixel-based display and XPT2046-controlled touchscreen, for converting between
+  the coordinates used by those two devices.
 
   The second of the above adds additional functionality to simple tests for
   touches of the screen, providing "debouncing" and informing the user code of
@@ -61,13 +63,13 @@
   calibration may be desirable because it seems that factory calibration is not
   highly accurate.
 
-  The TS_ILI9341_map class stores the current calibrated values of these
-  parameters in class variables. See example program ILI9341Calibrate.ino for
-  code that uses both types of functions and performs calibration, storing the
-  calibration values in EEPROM memory.
+  The TS_Display class stores the current calibrated values of these parameters
+  in class variables. See example program TS_DisplayCalibrate.ino for code that
+  uses both types of functions and performs calibration, storing the calibration
+  values in EEPROM memory.
 
   This class assumes that the screen rotation is fixed at one of the four
-  rotation values. The touchscreen must be set to the same rotation as the TFT
+  rotation values. The touchscreen must be set to the same rotation as the
   display, using their setRotation() functions.
 
   Rotation 0 is normal upright portrait orientation, 1 is normal upright
@@ -77,11 +79,11 @@
 */
 /**************************************************************************/
 
-#ifndef TS_ILI9341_map_h
-#define TS_ILI9341_map_h
+#ifndef TS_Display_h
+#define TS_Display_h
 
 #include <Arduino.h>
-#include <Adafruit_ILI9341.h>
+#include <Adafruit_GFX.h>
 #include <XPT2046_Touchscreen_TT.h>
 
 // Default milliseconds of touch before touch recognized, or absence of touch
@@ -110,25 +112,27 @@ typedef enum _eTouchEvent {
 
 /**************************************************************************/
 /*!
-  @brief    Class TS_ILI9341 manages the interface between a touchscreen
-            controlled by an XPT_2046 controller and a pixel display controlled
-            by an ILI9341 controller, with functions for mapping coordinates,
-            generating touch and release events, and mapping calibration.
+  @brief    Class TS_Display manages the interface between a touchscreen
+            controlled by an XPT_2046 controller and a pixel-based display
+            whose controller is an instance of a class derived from the
+            graphics class Adafruit_GFX. The class provides functions for
+            mapping coordinates, generating touch and release events, and
+            mapping calibration.
 */
 /**************************************************************************/
-class TS_ILI9341 {
+class TS_Display {
 
 protected:
 
   // The touchscreen object associated with the class instance using begin().
   XPT2046_Touchscreen* _ts;
 
-  // The TFT display object associated with the class instance using begin().
-  Adafruit_ILI9341* _tft;
+  // The display object associated with the class instance using begin().
+  Adafruit_GFX* _disp;
 
   // The four _TS_ variables below are the calibration parameters, used to map
-  // between touchscreen and TFT display coordinates. The values are actually
-  // the minimum and maximum x- and y-coordinates returned by the touchscreen's
+  // between touchscreen and display coordinates. The values are actually the
+  // minimum and maximum x- and y-coordinates returned by the touchscreen's
   // getPoint() function.
   //
   // The "UL" in the variable names below means upper-left, and "LR" means
@@ -162,7 +166,7 @@ private:
   // Timer for debouncing.
   ulong _msTime;
 
-  // TFT display screen size in pixel (varies depending on rotation).
+  // Display screen size in pixel (varies depending on rotation).
   int16_t _pixelsX;
   int16_t _pixelsY;
 
@@ -173,7 +177,7 @@ public:
     @brief  Constructor.
   */
   /**************************************************************************/
-  TS_ILI9341() : _ts(nullptr), _tft(nullptr), _TS_LR_X(0), _TS_LR_Y(0),
+  TS_Display() : _ts(nullptr), _disp(nullptr), _TS_LR_X(0), _TS_LR_Y(0),
       _TS_UL_X(0), _TS_UL_Y(0), _debounceMS_TR(DEF_DEBOUNCE_MS_TR),
       _minTouchPres(DEF_MIN_TOUCH_PRES), _maxReleasePres(DEF_MAX_RELEASE_PRES),
       _lastEventWasTouch(false), _msTime(millis()), _pixelsX(0), _pixelsY(0) {}
@@ -182,12 +186,14 @@ public:
   /*!
     @brief  Class instance initialization function.
     @param  ts    Pointer to the instance of the touchscreen object.
-    @param  tft   Pointer to the instance of the TFT LCD display object.
+    @param  disp  Pointer to the instance of the display object, which must be
+                  an display controller class that has been derived from the
+                  graphics support class Adafruit_GFX.
     @note         Calibration parameters are reset to their default values.
     @note         _pixelsX and _pixelsY are set appropriately.
   */
   /**************************************************************************/
-  void begin(XPT2046_Touchscreen* ts, Adafruit_ILI9341* tft);
+  void begin(XPT2046_Touchscreen* ts, Adafruit_GFX* disp);
 
   /**************************************************************************/
   /*!
@@ -237,11 +243,11 @@ public:
 
   /**************************************************************************/
   /*!
-    @brief  Map a touchscreen point (TSx, TSy) to a TFT display point (x, y).
+    @brief  Map a touchscreen point (TSx, TSy) to a display point (x, y).
     @param  TSx   Touchscreen x-coordinate to map.
     @param  TSy   Touchscreen y-coordinate to map.
-    @param  x     Pointer to variable to receive TFT display x-coordinate.
-    @param  y     Pointer to variable to receive TFT display y-coordinate.
+    @param  x     Pointer to variable to receive display x-coordinate.
+    @param  y     Pointer to variable to receive display y-coordinate.
     @note   Mapping depends on the screen rotation, assumed to be fixed.
   */
   /**************************************************************************/
@@ -249,9 +255,9 @@ public:
 
   /**************************************************************************/
   /*!
-    @brief  Reverse map a TFT point (x, y) to a touchscreen point (TSx, TSy).
-    @param  x     TFT display x-coordinate to map.
-    @param  y     TFT display y-coordinate to map.
+    @brief  Reverse map a display point (x, y) to a touchscreen point (TSx, TSy).
+    @param  x     Display x-coordinate to map.
+    @param  y     Display y-coordinate to map.
     @param  TSx   Pointer to variable to receive touchscreen x-coordinate.
     @param  TSy   Pointer to variable to receive touchscreen y-coordinate.
     @note   Mapping depends on the screen rotation, assumed to be fixed.
@@ -261,7 +267,7 @@ public:
 
   /**************************************************************************/
   /*!
-    @brief  Compute 2 TFT display coordinate pairs located near the upper-left
+    @brief  Compute two display coordinate pairs located near the upper-left
             and lower-right corners of the screen, to be used for displaying
             graphics (such as a "+" sign) to mark points the user is to click
             to calibrate the touchscreen.
@@ -271,7 +277,7 @@ public:
     @param  y_UL          Pointer to variable to receive upper-left y-coord.
     @param  x_LR          Pointer to variable to receive lower-right x-coord.
     @param  y_LR          Pointer to variable to receive lower-right y-coord.
-    @note   The 2 TFT display points need not be located the same distance from
+    @note   The two display points need not be located the same distance from
             the display edge or at upper-left and lower-right. Actually, any two
             points can be used. Accurancy is increased, though, by separating
             them as much as possible.
@@ -282,12 +288,12 @@ public:
 
   /**************************************************************************/
   /*!
-    @brief  Use 2 touchscreen coordinate pairs at specified TFT display
+    @brief  Use two touchscreen coordinate pairs at specified display
             coordinates to compute new touchscreen calibration parameter values.
-    @param  x_UL      TFT display upper-left x-coord.
-    @param  y_UL      TFT display upper-left y-coord.
-    @param  x_LR      TFT display lower-right x-coord.
-    @param  y_LR      TFT display lower-right y-coord.
+    @param  x_UL      Display upper-left x-coord.
+    @param  y_UL      Display upper-left y-coord.
+    @param  x_LR      Display lower-right x-coord.
+    @param  y_LR      Display lower-right y-coord.
     @param  TSx_UL    Corresponding touchscreen upper-left x-coord.
     @param  TSy_UL    Corresponding touchscreen upper-left y-coord.
     @param  TSx_LR    Corresponding touchscreen lower-right x-coord.
@@ -343,4 +349,4 @@ public:
   }
 };
 
-#endif // TS_ILI9341_h
+#endif // TS_Display_h

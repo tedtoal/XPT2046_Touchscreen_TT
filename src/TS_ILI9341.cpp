@@ -1,6 +1,6 @@
 /*
-  TS_ILI9341.cpp - Support mapping coordinates between an XPT2046-controlled
-  touchscreen and an ILI9341-controlled TFT LCD display, with calibration.
+  TS_Display.cpp - Support mapping coordinates between an XPT2046-controlled
+  touchscreen and a pixel-based display, with calibration.
   Created by Ted Toal, July 26, 2023
   Released into the public domain.
 
@@ -33,7 +33,7 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <Arduino.h>
-#include <TS_ILI9341.h>
+#include <TS_Display.h>
 
 // The four TS_ constants below are used to set the initial default calibration
 // parameter values to reasonable values probably suitable for most touchscreens.
@@ -56,11 +56,11 @@
 #define TS_OFFSET 4095
 
 /**************************************************************************/
-void TS_ILI9341::begin(XPT2046_Touchscreen* ts, Adafruit_ILI9341* tft) {
+void TS_Display::begin(XPT2046_Touchscreen* ts, Adafruit_GFX* disp) {
   _ts = ts;
-  _tft = tft;
+  _disp = disp;
 
-  switch (_tft->getRotation()) {
+  switch (_disp->getRotation()) {
 
   case 0:
     _TS_UL_X = TS_OFFSET - TS_LR_SHORT;
@@ -99,12 +99,12 @@ void TS_ILI9341::begin(XPT2046_Touchscreen* ts, Adafruit_ILI9341* tft) {
   _lastEventWasTouch = false;
   _msTime = millis();
 
-  _pixelsX = _tft->width();
-  _pixelsY = _tft->height();
+  _pixelsX = _disp->width();
+  _pixelsY = _disp->height();
 }
 
 /**************************************************************************/
-eTouchEvent TS_ILI9341::getTouchEvent(int16_t& x, int16_t& y, int16_t& pres,
+eTouchEvent TS_Display::getTouchEvent(int16_t& x, int16_t& y, int16_t& pres,
     int16_t* px, int16_t* py) {
 
   eTouchEvent ret = TS_UNCERTAIN;
@@ -144,20 +144,20 @@ eTouchEvent TS_ILI9341::getTouchEvent(int16_t& x, int16_t& y, int16_t& pres,
 }
 
 /**************************************************************************/
-void TS_ILI9341::mapTStoDisplay(int16_t TSx, int16_t TSy, int16_t* x,
+void TS_Display::mapTStoDisplay(int16_t TSx, int16_t TSy, int16_t* x,
     int16_t* y) {
   *x = map(TSx, _TS_UL_X, _TS_LR_X, 0, _pixelsX);
   *y = map(TSy, _TS_UL_Y, _TS_LR_Y, 0, _pixelsY);
 }
 
 /**************************************************************************/
-void TS_ILI9341::mapDisplayToTS(int16_t x, int16_t y, int16_t* TSx,
+void TS_Display::mapDisplayToTS(int16_t x, int16_t y, int16_t* TSx,
     int16_t* TSy) {
   *TSx = map(x, 0, _pixelsX, _TS_UL_X, _TS_LR_X);
   *TSy = map(y, 0, _pixelsY, _TS_UL_Y, _TS_LR_Y);
 }
 /**************************************************************************/
-void TS_ILI9341::GetCalibration_UL_LR(int16_t pixelOffset, int16_t* x_UL,
+void TS_Display::GetCalibration_UL_LR(int16_t pixelOffset, int16_t* x_UL,
     int16_t* y_UL, int16_t* x_LR, int16_t* y_LR) {
   *x_UL = pixelOffset;
   *y_UL = pixelOffset;
@@ -166,8 +166,8 @@ void TS_ILI9341::GetCalibration_UL_LR(int16_t pixelOffset, int16_t* x_UL,
 }
 
 /**************************************************************************/
-void TS_ILI9341::findTS_calibration(int16_t x_UL, int16_t y_UL,
-    int16_t x_LR, int16_t y_LR, int16_t TSx_UL, int16_t TSy_UL, int16_t TSx_LR,
+void TS_Display::findTS_calibration(int16_t x_UL, int16_t y_UL, int16_t x_LR,
+    int16_t y_LR, int16_t TSx_UL, int16_t TSy_UL, int16_t TSx_LR,
     int16_t TSy_LR, int16_t* TS_LR_X, int16_t* TS_LR_Y, int16_t* TS_UL_X,
     int16_t* TS_UL_Y) {
 
