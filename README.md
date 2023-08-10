@@ -320,7 +320,7 @@ You can model your own calibration screen after the one shown in this example pr
 
 ## Adafruit Library Compatibility
 
-XPT2046_Touchscreen is meant to be compatible with sketches written for Adafruit_STMPE610, offering the same functions, parameters and numerical ranges as Adafruit's library. It is also meant to be compatible with any display using the Adafruit_GFX library.
+XPT2046_Touchscreen is meant to be compatible with sketches written for Adafruit_STMPE610, offering the same functions, parameters and numerical ranges as Adafruit's library. It is also meant to be compatible with any display using the Adafruit_GFX_Library library.
 
 ## Using The Interrupt Pin
 
