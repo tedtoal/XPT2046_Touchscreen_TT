@@ -154,6 +154,8 @@ Also include the header file for the display controller class that is derived fr
 #include <Adafruit_ILI9341.h>
 ```
 
+If you use a display that has a different (compatible) library, you simply replace *Adafruit_ILI9341* with it. The sample programs that use *TS_Display.h* all use the *Adafruit_ILI9341* library, but if you have a different library, just change the three occurrences of *Adafruit_ILI9341* in the sample program to your library name, that is all that is required to switch to a different type of display. A library is compatible when its C++ class is derived from class *Adafruit_GFX*.
+
 ### Define pins
 
 Next, near the start of your project .ino file, use #define statements to define the pins used by the touchscreen and display in your system.
