@@ -1,5 +1,5 @@
 /*
-  ILI9341Test.ino - A program to test the touchscreen library functions,
+  TS_DisplayTest.ino - A program to test the touchscreen library functions,
   excluding testing of touch/release events.
   Copied from Paul Stoffregen's XPT2046_Touchscreen project.
 
@@ -30,7 +30,8 @@
   and watch the serial monitor window at 115200 bps.
 */
 #include <Arduino.h>
-#include <TS_ILI9341.h>
+#include <Adafruit_ILI9341.h>
+#include <TS_Display.h>
 #include <Fonts/FreeSans9pt7b.h> // From Adafruit_GFX_Library
 
 #define TFT_CS_PIN    10
@@ -54,7 +55,7 @@ XPT2046_Touchscreen* ts;
 Adafruit_ILI9341* tft;
 
 // Pointer to touchscreen-TFT object.
-TS_ILI9341* ts_display;
+TS_Display* ts_display;
 
 void setup() {
   delay(1000);
@@ -81,7 +82,7 @@ void setup() {
   ts->setRotation(tft->getRotation());
 
   // Allocate and initialize the touchscreen-tft object.
-  ts_display = new TS_ILI9341();
+  ts_display = new TS_Display();
   ts_display->begin(ts, tft);
 
   // Set and show pressure threshold.

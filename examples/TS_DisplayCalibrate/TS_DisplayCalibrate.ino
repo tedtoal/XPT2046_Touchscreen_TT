@@ -1,5 +1,5 @@
 /*
-  ILI9341Calibrate.ino - A program to calibrate the touchscreen-to-display mapping.
+  TS_DisplayCalibrate.ino - A program to calibrate the touchscreen-to-display mapping.
   Created by Ted Toal, July 26, 2023.
   Released into the public domain.
 
@@ -56,7 +56,8 @@
 #include <Arduino.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <TS_ILI9341.h>
+#include <Adafruit_ILI9341.h>
+#include <TS_Display.h>
 #include <Fonts/FreeSans9pt7b.h> // From Adafruit_GFX_Library
 #include <monitor_printf.h>
 
@@ -157,7 +158,7 @@ XPT2046_Touchscreen* ts;
 Adafruit_ILI9341* tft;
 
 // Pointer to touchscreen/TFT LCD display object.
-TS_ILI9341* ts_display;
+TS_Display* ts_display;
 
 // TFT UL and LR corner positions and corresponding touchscreen corner coordinates.
 int16_t x_ULcorner, y_ULcorner, x_LRcorner, y_LRcorner;
@@ -292,7 +293,7 @@ void setup() {
   ts->setRotation(tft->getRotation());
 
   // Create touchscreen-TFT object and initialize it.
-  ts_display = new TS_ILI9341();
+  ts_display = new TS_Display();
   ts_display->begin(ts, tft);
 
   // Make 'defaults' hold the default non-volatile settings when the settings

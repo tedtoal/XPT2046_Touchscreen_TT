@@ -79,8 +79,8 @@
 */
 /**************************************************************************/
 
-#ifndef TS_Display_h
-#define TS_Display_h
+#ifndef ILI9341_h
+#define ILI9341_h
 
 #include <Arduino.h>
 #include <Adafruit_GFX.h>
@@ -349,4 +349,4 @@ public:
   }
 };
 
-#endif // TS_Display_h
+#endif // ILI9341_h

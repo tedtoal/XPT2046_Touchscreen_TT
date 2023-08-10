@@ -67,9 +67,10 @@
 
         - Adjust Serial initialization to start up better.
 
-        - ILI9341Test.ino now uses new files TS_Display.h/.cpp to display a "+"
-          on the display at the tapped point, and it doesn't repeatedly write
-          data to monitor and display, but only during a tap or untap.
+        - ILI9341Test.ino is renamed to TS_DisplayTest.ino and it now uses new
+          files TS_Display.h/.cpp to display a "+" on the display at the tapped
+          point, and it doesn't repeatedly write data to monitor and display,
+          but only during a tap or untap.
 */
 #ifndef XPT2046_Touchscreen_TT_h
 #define XPT2046_Touchscreen_TT_h

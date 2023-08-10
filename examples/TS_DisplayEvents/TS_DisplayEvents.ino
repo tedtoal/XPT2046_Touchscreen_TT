@@ -1,5 +1,5 @@
 /*
-  ILI9341Events.ino - A program to illustrate the touch/release event capability
+  TS_DisplayEvents.ino - A program to illustrate the touch/release event capability
   of the touchscreen library.
   Created by Ted Toal, August 7, 2023.
   Released into the public domain.
@@ -40,7 +40,8 @@
   how these events are detected.
 */
 #include <Arduino.h>
-#include <TS_ILI9341.h>
+#include <Adafruit_ILI9341.h>
+#include <TS_Display.h>
 #include <Fonts/FreeSans9pt7b.h> // From Adafruit_GFX_Library
 #include <monitor_printf.h>
 
@@ -65,7 +66,7 @@ XPT2046_Touchscreen* ts;
 Adafruit_ILI9341* tft;
 
 // Pointer to touchscreen/TFT LCD display object.
-TS_ILI9341* ts_display;
+TS_Display* ts_display;
 
 // Print string S to display at cursor position (x,y).
 void tft_print(int16_t x, int16_t y, const char* S) {
@@ -96,7 +97,7 @@ void setup() {
   ts->setRotation(tft->getRotation());
 
   // Create touchscreen-TFT object and initialize it.
-  ts_display = new TS_ILI9341();
+  ts_display = new TS_Display();
   ts_display->begin(ts, tft);
 
   // Tell user to tap screen.
