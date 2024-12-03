@@ -110,9 +110,9 @@ eTouchEvent TS_Display::getTouchEvent(int16_t& x, int16_t& y, int16_t& pres,
   eTouchEvent ret = TS_UNCERTAIN;
   TS_Point p = _ts->getPoint();
 
-  if (px != NULL)
+  if (px != nullptr)
     *px = p.x;
-  if (py != NULL)
+  if (py != nullptr)
     *py = p.y;
 
   mapTStoDisplay(p.x, p.y, &x, &y);

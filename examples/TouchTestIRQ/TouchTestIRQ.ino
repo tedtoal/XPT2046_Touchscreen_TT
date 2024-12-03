@@ -47,7 +47,7 @@ void setup() {
   delay(200);
 
   ts = new XPT2046_Touchscreen(TOUCH_CS_PIN, TOUCH_IRQ_PIN);
-  //ts = new XPT2046_Touchscreen(TOUCH_CS_PIN);  // Param 2 - NULL - No interrupts
+  //ts = new XPT2046_Touchscreen(TOUCH_CS_PIN);  // Param 2 - nullptr - No interrupts
   //ts = new XPT2046_Touchscreen(TOUCH_CS_PIN, 255);  // Param 2 - 255 - No interrupts
   //ts = new XPT2046_Touchscreen(TOUCH_CS_PIN, TOUCH_IRQ_PIN);  // Param 2 - Touch IRQ Pin - interrupt enabled polling
   ts->begin();

@@ -3,10 +3,17 @@
 
 ## Table of Contents
 
+* [Release 1.8.1](#release-181)
 * [Release 1.7.1](#release-171)
 * [Release 1.6.1](#release-161)
 * [Release 1.5.1](#release-151)
 ---
+
+### Release 1.8.1
+
+1. TS_Display.h used "ulong" for a type. This created a compilation error after
+some update to another Arduino file somewhere. This was fixed by changing it to
+the defined and more acceptable and equivalent type "uint32_t".
 
 ### Release 1.7.1
 

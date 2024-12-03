@@ -164,7 +164,7 @@ private:
   bool _lastEventWasTouch;
 
   // Timer for debouncing.
-  ulong _msTime;
+  uint32_t _msTime;
 
   // Display screen size in pixel (varies depending on rotation).
   int16_t _pixelsX;
